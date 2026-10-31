@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Terapeuta Virtual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4efe8;
+        --bg-soft: #ece5da;
+        --surface: #fffdf9;
+        --surface-2: #f8f3ec;
+        --ink: #2c3833;
+        --ink-soft: #5c6a63;
+        --line: #ddd2c2;
+        --accent: #2e6f5e;
+        --accent-strong: #235847;
+        --accent-soft: #dcebe2;
+        --rose: #c96f5a;
+        --rose-soft: #f6e3dc;
+        --sand: #e9dfcd;
+        --user-bubble: #2e6f5e;
+        --user-ink: #ffffff;
+        --lia-bubble: #ffffff;
+        --crisis-bg: #fdeceb;
+        --crisis-ink: #8c2b21;
+        --crisis-line: #e5a49c;
+        --shadow: 0 10px 30px rgba(60, 48, 32, 0.10);
+        --radius: 18px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141d1a;
+          --bg-soft: #1a2621;
+          --surface: #1f2c26;
+          --surface-2: #24332c;
+          --ink: #e9efe9;
+          --ink-soft: #a9bab0;
+          --line: #33463c;
+          --accent: #7fc4ab;
+          --accent-strong: #9ad4bd;
+          --accent-soft: #27443a;
+          --rose: #e59a85;
+          --rose-soft: #453029;
+          --sand: #2c3a32;
+          --user-bubble: #2e6f5e;
+          --user-ink: #ffffff;
+          --lia-bubble: #26362e;
+          --crisis-bg: #402422;
+          --crisis-ink: #ffb4a6;
+          --crisis-line: #7a443c;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Nunito", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 17px;
+        line-height: 1.5;
+      }
+      button { font-family: inherit; cursor: pointer; }
+      .layout {
+        display: flex;
+        height: 100dvh;
+        max-width: 1240px;
+        margin: 0 auto;
+      }
+
+      /* ---------- Chat column ---------- */
+      .chat-col {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--bg);
+      }
+      .chat-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+      .avatar {
+        width: 48px; height: 48px; flex: 0 0 48px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid var(--accent);
+      }
+      .chat-head h1 {
+        font-family: "Lora", serif;
+        font-size: 20px;
+        margin: 0;
+        font-weight: 600;
+      }
+      .chat-head .status {
+        font-size: 13.5px;
+        color: var(--accent);
+        font-weight: 700;
+        display: flex; align-items: center; gap: 6px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+      .head-main { flex: 1 1 auto; min-width: 0; }
+      .head-actions { margin-left: auto; display: flex; gap: 8px; }
+      .icon-btn {
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 700;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .icon-btn[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .icon-btn svg { width: 17px; height: 17px; flex: 0 0 17px; }
+
+      .messages {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 18px 16px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        scroll-behavior: smooth;
+      }
+      .msg-row { display: flex; margin-top: 10px; }
+      .msg-row.lia { justify-content: flex-start; }
+      .msg-row.user { justify-content: flex-end; }
+      .bubble {
+        max-width: min(78%, 560px);
+        padding: 11px 15px;
+        border-radius: var(--radius);
+        font-size: 16.5px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      .msg-row.lia .bubble {
+        background: var(--lia-bubble);
+        border: 1px solid var(--line);
+        border-bottom-left-radius: 6px;
+      }
+      .msg-row.user .bubble {
+        background: var(--user-bubble);
+        color: var(--user-ink);
+        border-bottom-right-radius: 6px;
+      }
+      .msg-time {
+        font-size: 11.5px;
+        color: var(--ink-soft);
+        margin: 2px 6px 0;
+      }
+      .msg-row.user + .msg-time { text-align: right; }
+      .time-wrap { display: flex; flex-direction: column; }
+      .msg-row.user .time-wrap { align-items: flex-end; }
+      .msg-row.lia .time-wrap { align-items: flex-start; }
+
+      .typing {
+        display: none;
+        align-items: center; gap: 5px;
+        padding: 12px 16px;
+        background: var(--lia-bubble);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        border-bottom-left-radius: 6px;
+        width: fit-content;
+        margin-top: 10px;
+      }
+      .typing.on { display: inline-flex; }
+      .typing span {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--ink-soft);
+        animation: bounce 1.2s infinite;
+      }
+      .typing span:nth-child(2) { animation-delay: 0.15s; }
+      .typing span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes bounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+        30% { transform: translateY(-4px); opacity: 1; }
+      }
+
+      .crisis-card {
+        margin-top: 12px;
+        background: var(--crisis-bg);
+        border: 1.5px solid var(--crisis-line);
+        color: var(--crisis-ink);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        max-width: min(88%, 560px);
+        font-size: 15.5px;
+      }
+      .crisis-card strong { display: block; font-size: 16.5px; margin-bottom: 4px; }
+      .crisis-card a {
+        display: inline-block;
+        margin-top: 8px;
+        background: var(--crisis-ink);
+        color: var(--crisis-bg);
+        font-weight: 800;
+        text-decoration: none;
+        padding: 9px 16px;
+        border-radius: 999px;
+        font-size: 15px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .crisis-card a { color: #2a1512; }
+      }
+
+      .chips {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        padding: 10px 16px 4px;
+      }
+      .chip {
+        border: 1.5px solid var(--accent);
+        color: var(--accent-strong);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font-size: 14.5px;
+        font-weight: 700;
+      }
+      .chip:active { background: var(--accent-soft); }
+
+      .composer {
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        background: var(--surface);
+        border-top: 1px solid var(--line);
+      }
+      .composer-row { display: flex; gap: 8px; align-items: flex-end; }
+      .composer textarea {
+        flex: 1 1 auto;
+        border: 1.5px solid var(--line);
+        border-radius: 22px;
+        padding: 11px 16px;
+        font-family: inherit;
+        font-size: 16.5px;
+        resize: none;
+        max-height: 120px;
+        background: var(--surface-2);
+        color: var(--ink);
+      }
+      .composer textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      .round-btn {
+        width: 46px; height: 46px; flex: 0 0 46px;
+        border-radius: 50%;
+        border: none;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .round-btn svg { width: 21px; height: 21px; }
+      .send-btn { background: var(--accent); color: #fff; }
+      .mic-btn { background: var(--surface-2); border: 1.5px solid var(--line); color: var(--ink); }
+      .mic-btn.recording { background: var(--rose); border-color: var(--rose); color: #fff; animation: pulse 1.2s infinite; }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+      .help-line {
+        text-align: center;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        padding: 8px 8px 0;
+      }
+      .help-line a { color: var(--rose); font-weight: 800; text-decoration: none; }
+
+      /* ---------- Sidebar ---------- */
+      .side {
+        flex: 0 0 348px;
+        border-left: 1px solid var(--line);
+        background: var(--bg-soft);
+        overflow-y: auto;
+        padding: 16px;
+        display: flex; flex-direction: column; gap: 14px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+      .card h2 {
+        font-family: "Lora", serif;
+        font-size: 18px;
+        margin: 0 0 6px;
+        font-weight: 600;
+      }
+      .card p { margin: 0 0 10px; font-size: 15px; color: var(--ink-soft); }
+      .card p:last-child { margin-bottom: 0; }
+
+      .mood-row { display: flex; justify-content: space-between; gap: 4px; }
+      .mood-btn {
+        flex: 1;
+        background: var(--surface-2);
+        border: 2px solid transparent;
+        border-radius: 14px;
+        padding: 8px 2px 6px;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
+      }
+      .mood-btn svg { width: 30px; height: 30px; }
+      .mood-btn.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+      .mood-note { font-size: 14px; color: var(--ink-soft); margin-top: 10px; min-height: 20px; }
+
+      .breath-stage {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 10px 0 4px;
+      }
+      .breath-circle {
+        width: 118px; height: 118px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, var(--accent-soft), var(--accent));
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        font-weight: 800; font-size: 17px;
+        text-align: center;
+        transform: scale(1);
+        box-shadow: var(--shadow);
+      }
+      .breath-count { font-size: 14px; color: var(--ink-soft); margin-top: 10px; min-height: 20px; }
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-size: 15px; font-weight: 800;
+        background: var(--accent); color: #fff;
+      }
+      .btn.secondary {
+        background: var(--surface-2);
+        color: var(--accent-strong);
+        border: 1.5px solid var(--accent);
+      }
+      .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+      .ground-step {
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 15.5px;
+        min-height: 74px;
+      }
+      .ground-step strong { color: var(--accent-strong); display: block; font-size: 16.5px; margin-bottom: 2px; }
+
+      .grat-input {
+        width: 100%;
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        padding: 9px 12px;
+        font-family: inherit; font-size: 15.5px;
+        margin-bottom: 8px;
+        background: var(--surface-2);
+        color: var(--ink);
+      }
+      .grat-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      .grat-list li {
+        background: var(--rose-soft);
+        border-radius: 12px;
+        padding: 9px 12px;
+        font-size: 15px;
+      }
+      .grat-list li small { display: block; color: var(--ink-soft); font-size: 12.5px; }
+
+      .affirm {
+        font-family: "Lora", serif;
+        font-style: italic;
+        font-size: 18.5px;
+        line-height: 1.45;
+        background: var(--sand);
+        border-radius: 12px;
+        padding: 14px 16px;
+        color: var(--ink);
+      }
+      @media (prefers-color-scheme: dark) { .affirm { background: var(--surface-2); } }
+
+      .help-card { border-color: var(--crisis-line); background: var(--crisis-bg); color: var(--crisis-ink); }
+      .help-card h2 { color: var(--crisis-ink); }
+      .help-card p { color: var(--crisis-ink); }
+      .help-card a.tel {
+        display: inline-block;
+        background: var(--crisis-ink); color: var(--crisis-bg);
+        padding: 9px 16px; border-radius: 999px;
+        font-weight: 800; text-decoration: none; font-size: 15px; margin-top: 4px;
+      }
+      @media (prefers-color-scheme: dark) { .help-card a.tel { color: #2a1512; } }
+      .fineprint { font-size: 13px; color: var(--ink-soft); line-height: 1.55; }
+
+      .tools-toggle { display: none; }
+
+      @media (max-width: 860px) {
+        .layout { flex-direction: column; }
+        .chat-col { flex: 1 1 auto; min-height: 0; }
+        .side {
+          display: none;
+          flex: none;
+          border-left: none;
+          border-top: 1px solid var(--line);
+          max-height: 62dvh;
+        }
+        .side.open { display: flex; }
+        .tools-toggle { display: inline-flex; }
+        .bubble { max-width: 86%; }
+        .chat-head h1 { font-size: 18px; }
+      }
+      @media (max-width: 560px) {
+        .chat-head { flex-wrap: wrap; row-gap: 8px; padding: 10px 12px; }
+        .avatar { width: 40px; height: 40px; flex-basis: 40px; }
+        .chat-head h1 { font-size: 17px; white-space: nowrap; }
+        .chat-head .status { font-size: 12.5px; }
+        .head-actions { margin-left: auto; }
+        .icon-btn { padding: 7px 11px; font-size: 13.5px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .typing span, .mic-btn.recording { animation: none; }
+        .messages { scroll-behavior: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <!-- ================= CHAT ================= -->
+      <section class="chat-col" aria-label="Conversa com a Lia">
+        <header class="chat-head">
+          <div class="avatar" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="34" height="34"><circle cx="24" cy="24" r="21" fill="none"/><circle cx="17.5" cy="21" r="2.4" fill="var(--accent-strong)"/><circle cx="30.5" cy="21" r="2.4" fill="var(--accent-strong)"/><path d="M16 29c2.6 3.4 5.4 4.8 8 4.8s5.4-1.4 8-4.8" fill="none" stroke="var(--accent-strong)" stroke-width="2.6" stroke-linecap="round"/><path d="M24 4c1.8 2.4 1.8 4.8 0 7-1.8-2.2-1.8-4.6 0-7z" fill="var(--rose)"/></svg>
+          </div>
+          <div class="head-main">
+            <h1>Lia · Terapeuta Virtual</h1>
+            <div class="status"><span class="dot"></span> aqui para te ouvir, sem julgamentos</div>
+          </div>
+          <div class="head-actions">
+            <button class="icon-btn" id="ttsBtn" aria-pressed="false" title="Ouvir as respostas da Lia em voz alta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+              Ouvir
+            </button>
+            <button class="icon-btn tools-toggle" id="toolsBtn" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22c5-3 8-7.5 8-13V4l-3-1c-4 2.5-7 7-7 12"/><path d="M12 22C7 19 4 14.5 4 9V4l3-1c4 2.5 7 7 7 12" opacity="0"/><path d="M12 22V10"/></svg>
+              Ferramentas
+            </button>
+          </div>
+        </header>
+
+        <div class="messages" id="messages" aria-live="polite"></div>
+
+        <div class="chips" id="chips" aria-label="Comece por um tema">
+          <button class="chip" data-say="Estou me sentindo muito ansiosa">Estou ansiosa</button>
+          <button class="chip" data-say="Estou muito triste hoje">Estou triste</button>
+          <button class="chip" data-say="Estou muito estressada e cansada">Estou estressada</button>
+          <button class="chip" data-say="Me sinto muito sozinha">Me sinto sozinha</button>
+          <button class="chip" data-say="Estou com muita raiva">Estou com raiva</button>
+          <button class="chip" data-say="Não consigo dormir direito">Não consigo dormir</button>
+          <button class="chip" data-say="Estou com problemas no trabalho">Problemas no trabalho</button>
+          <button class="chip" data-say="Briguei com uma pessoa importante pra mim">Briguei com alguém</button>
+        </div>
+
+        <div class="composer">
+          <div class="composer-row">
+            <textarea id="input" rows="1" placeholder="Desabafe aqui…" aria-label="Escreva sua mensagem"></textarea>
+            <button class="round-btn mic-btn" id="micBtn" title="Falar por voz" aria-label="Falar por voz" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
+            </button>
+            <button class="round-btn send-btn" id="sendBtn" title="Enviar" aria-label="Enviar mensagem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+            </button>
+          </div>
+          <div class="help-line">Precisa de ajuda agora? Ligue <a href="tel:188">188 — CVV</a>, gratuito e sigiloso, 24 horas.</div>
+        </div>
+      </section>
+
+      <!-- ================= SIDEBAR / TOOLS ================= -->
+      <aside class="side" id="sidePanel" aria-label="Ferramentas de bem-estar">
+        <div class="card">
+          <h2>Como você está hoje?</h2>
+          <p>Toque no rostinho que combina com o seu momento. Sem resposta certa ou errada.</p>
+          <div class="mood-row" id="moodRow">
+            <button class="mood-btn" data-mood="1"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#e8a49c"/><circle cx="14" cy="17" r="2" fill="#5c2a24"/><circle cx="26" cy="17" r="2" fill="#5c2a24"/><path d="M13 28c2-3 4.5-4.2 7-4.2s5 1.2 7 4.2" fill="none" stroke="#5c2a24" stroke-width="2.2" stroke-linecap="round"/></svg>Péssima</button>
+            <button class="mood-btn" data-mood="2"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#eec39a"/><circle cx="14" cy="17" r="2" fill="#6b4423"/><circle cx="26" cy="17" r="2" fill="#6b4423"/><path d="M14 27c2-2.2 3.8-3 6-3s4 .8 6 3" fill="none" stroke="#6b4423" stroke-width="2.2" stroke-linecap="round"/></svg>Mal</button>
+            <button class="mood-btn" data-mood="3"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#eee3ac"/><circle cx="14" cy="17" r="2" fill="#6b5e23"/><circle cx="26" cy="17" r="2" fill="#6b5e23"/><path d="M14 26h12" stroke="#6b5e23" stroke-width="2.2" stroke-linecap="round"/></svg>Mais ou menos</button>
+            <button class="mood-btn" data-mood="4"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#bcd9a8"/><circle cx="14" cy="17" r="2" fill="#3c5a28"/><circle cx="26" cy="17" r="2" fill="#3c5a28"/><path d="M13 24c2 2.6 4.3 3.8 7 3.8s5-1.2 7-3.8" fill="none" stroke="#3c5a28" stroke-width="2.2" stroke-linecap="round"/></svg>Bem</button>
+            <button class="mood-btn" data-mood="5"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#8fc7ae"/><circle cx="14" cy="16.5" r="2" fill="#1f4d3a"/><circle cx="26" cy="16.5" r="2" fill="#1f4d3a"/><path d="M12.5 23.5c2.2 3.6 4.7 5.2 7.5 5.2s5.3-1.6 7.5-5.2" fill="none" stroke="#1f4d3a" stroke-width="2.2" stroke-linecap="round"/></svg>Ótima</button>
+          </div>
+          <div class="mood-note" id="moodNote"></div>
+        </div>
+
+        <div class="card">
+          <h2>Respiração guiada</h2>
+          <p>Respirar devagar ajuda o corpo a sair do modo de alerta. Siga o círculo, no seu ritmo.</p>
+          <div class="breath-stage">
+            <div class="breath-circle" id="breathCircle">Respire</div>
+            <div class="breath-count" id="breathCount">Toque em começar quando estiver pronta.</div>
+          </div>
+          <div class="btn-row" style="justify-content:center">
+            <button class="btn" id="breathBtn">Começar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Aterramento 5 · 4 · 3 · 2 · 1</h2>
+          <p>Quando a mente dispara, voltar aos sentidos traz você de volta ao presente.</p>
+          <div class="ground-step" id="groundStep"><strong>Vamos começar?</strong>Toque em “Iniciar” e siga um passo de cada vez, sem pressa.</div>
+          <div class="btn-row">
+            <button class="btn" id="groundBtn">Iniciar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Diário de gratidão</h2>
+          <p>Anotar pequenas coisas boas muda o foco do dia. Escreva até 3 de hoje:</p>
+          <input class="grat-input" id="grat1" type="text" placeholder="1 · Algo bom de hoje…" />
+          <input class="grat-input" id="grat2" type="text" placeholder="2 · Uma pessoa ou gesto…" />
+          <input class="grat-input" id="grat3" type="text" placeholder="3 · Um momento simples…" />
+          <div class="btn-row">
+            <button class="btn" id="gratSave">Guardar no diário</button>
+            <button class="btn secondary" id="gratDownload">Baixar diário</button>
+          </div>
+          <ul class="grat-list" id="gratList"></ul>
+        </div>
+
+        <div class="card">
+          <h2>Frase para você</h2>
+          <div class="affirm" id="affirmText">Você não precisa dar conta de tudo hoje. Um passo de cada vez já é caminho.</div>
+          <div class="btn-row">
+            <button class="btn secondary" id="affirmBtn">Nova frase</button>
+          </div>
+        </div>
+
+        <div class="card help-card">
+          <h2>Se a dor apertar demais</h2>
+          <p>Se você sentir que pode se machucar, por favor, não fique sozinha com isso. O <strong>CVV — Centro de Valorização da Vida</strong> atende gratuitamente, com sigilo, a qualquer hora:</p>
+          <a class="tel" href="tel:188">Ligar 188 agora</a>
+          <p style="margin-top:10px">Emergência: <strong>192 (SAMU)</strong>. Você também pode conversar pelo site <strong>cvv.org.br</strong>.</p>
+        </div>
+
+        <p class="fineprint">A Lia é uma companheira de apoio emocional: ela escuta, acolhe e sugere práticas de bem-estar. Ela <strong>não substitui</strong> psicólogos, psiquiatras ou outros profissionais de saúde. Se o sofrimento for intenso ou persistente, procurar um profissional é um ato de cuidado com você. Suas conversas ficam só nesta tela, nesta visita — nada é enviado nem guardado.</p>
+      </aside>
+    </div>
+
+    <script>
+      "use strict";
+      /* ================= Helpers ================= */
+      const $ = (s) => document.querySelector(s);
+      const norm = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const nowTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+      const messagesEl = $("#messages");
+      const inputEl = $("#input");
+      let userName = "";
+      let lastEmotion = null;
+      let pendingOffer = null; // 'breath' | 'ground' | null
+      let turnCount = 0;
+      const usedIdx = {};
+
+      function rotate(key, arr) {
+        if (!usedIdx[key]) usedIdx[key] = 0;
+        const item = arr[usedIdx[key] % arr.length];
+        usedIdx[key]++;
+        return item;
+      }
+
+      /* ================= Chat rendering ================= */
+      function addMsg(who, text) {
+        const row = document.createElement("div");
+        row.className = "msg-row " + who;
+        const wrap = document.createElement("div");
+        wrap.className = "time-wrap";
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+        const time = document.createElement("div");
+        time.className = "msg-time";
+        time.textContent = nowTime();
+        wrap.appendChild(bubble);
+        wrap.appendChild(time);
+        row.appendChild(wrap);
+        messagesEl.appendChild(row);
+        scrollDown();
+        if (who === "lia" && ttsOn) speak(text);
+      }
+      function scrollDown() {
+        requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
+      }
+      let typingEl = null;
+      function showTyping() {
+        hideTyping();
+        typingEl = document.createElement("div");
+        typingEl.className = "typing on";
+        typingEl.setAttribute("aria-label", "Lia está digitando");
+        typingEl.innerHTML = "<span></span><span></span><span></span>";
+        messagesEl.appendChild(typingEl);
+        scrollDown();
+      }
+      function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+      function liaSay(texts, delay) {
+        const list = Array.isArray(texts) ? texts : [texts];
+        showTyping();
+        const wait = delay || Math.min(700 + list[0].length * 14, 2200);
+        setTimeout(() => {
+          hideTyping();
+          list.forEach((t, i) => {
+            if (i === 0) { addMsg("lia", t); }
+            else {
+              showTyping();
+              setTimeout(() => { hideTyping(); addMsg("lia", t); }, 650 + t.length * 10);
+            }
+          });
+        }, wait);
+      }
+
+      function addCrisisCard() {
+        const card = document.createElement("div");
+        card.className = "crisis-card";
+        card.innerHTML = "<strong>Você não precisa passar por isso sozinha.</strong>" +
+          "O CVV atende gratuitamente, com sigilo total, 24 horas por dia. Conversar com uma pessoa de verdade agora pode ajudar muito." +
+          "<br><a href='tel:188'>Ligar 188 — CVV</a>";
+        messagesEl.appendChild(card);
+        scrollDown();
+      }
+
+      /* ================= Emotion engine ================= */
+      const CRISIS = ["suicidio", "suicidar", "me matar", "quero morrer", "tirar minha vida",
+        "acabar com minha vida", "acabar com tudo", "me machucar", "me cortar", "me ferir",
+        "nao quero mais viver", "nao quero viver", "sem vontade de viver", "desistir de viver",
+        "melhor morrer", "sumir pra sempre", "ninguem ia sentir falta"];
+
+      const EMOTIONS = {
+        ansiedade: {
+          keys: ["ansios", "ansiedade", "nervos", "preocupad", "panico", "medo", "aflit", "angustia", "coraçao acelerado", "coracao acelerado", "tensao", "inquiet"],
+          val: [
+            "Obrigada por me contar. A ansiedade aperta o peito e acelera a cabeça — é muito cansativo viver assim, e você não está exagerando.",
+            "Eu te escuto. Quando a ansiedade vem, parece que a mente não desliga nunca, né? Faz todo sentido você querer desabafar.",
+            "Sinto que hoje a ansiedade está pesando para você. Estou aqui, sem pressa e sem julgamento."
+          ],
+          ask: [
+            "Me conta: o que tem ocupado mais a sua cabeça hoje?",
+            "Tem alguma situação específica que está te deixando assim, ou é uma sensação que vem do nada?",
+            "Como seu corpo sente isso? Peito apertado, falta de ar, cabeça a mil…?"
+          ],
+          tip: [
+            "Uma coisa que ajuda na hora da crise: respirar devagar, soltando o ar bem lentamente. Quer tentar a respiração guiada comigo? É só tocar em “Começar” no cartão de respiração — ou me responder “sim” que eu te guio por aqui.",
+            "Tente isto agora: solte os ombros, descruze os braços e solte o ar pela boca bem devagar, como quem apaga uma vela. Repetir 4 vezes já acalma o corpo."
+          ],
+          offer: "breath"
+        },
+        tristeza: {
+          keys: ["trist", "chor", "deprim", "desanim", "vazio", "sem vontade", "pra baixo", "melancol", "depress"],
+          val: [
+            "Sinto muito que você esteja se sentindo assim. Dias de tristeza pesam, e você não precisa fingir que está tudo bem aqui comigo.",
+            "Obrigada por confiar em mim. Chorar, ficar quietinha, não ter vontade de nada… tudo isso faz parte, não é fraqueza.",
+            "Estou aqui com você. A tristeza às vezes chega sem pedir licença, e a gente só precisa de um lugar seguro para colocá-la para fora."
+          ],
+          ask: [
+            "Aconteceu alguma coisa que puxou essa tristeza, ou ela foi chegando aos poucos?",
+            "Há quanto tempo você vem se sentindo assim?",
+            "Tem alguém na sua vida com quem você consegue conversar sobre isso — ou tem guardado tudo sozinha?"
+          ],
+          tip: [
+            "Nos dias pesados, tente reduzir o dia a passos bem pequenos: um banho, uma refeição simples, um pouco de luz do sol. Só o próximo passinho, sem cobrar o dia inteiro de você.",
+            "Uma prática que consola muita gente: escrever 3 coisinhas boas do dia, por menores que sejam — um café quente, uma mensagem, um descanso. Se quiser, use o Diário de Gratidão aqui do lado."
+          ],
+          offer: null
+        },
+        estresse: {
+          keys: ["estress", "cansad", "sobrecarreg", "pressao", "esgotad", "exausta", "exaust", "sem tempo", "correria", "sobrecarga"],
+          val: [
+            "Dá para sentir o peso daí. Quando tudo acumula, o corpo e a cabeça pedem socorro — e você está ouvindo esse pedido, isso já é cuidado.",
+            "Você está carregando muita coisa, né? Ninguém dá conta de tudo o tempo todo, por mais forte que seja.",
+            "Respira… você chegou até aqui mesmo com toda essa pressão. Me conta o que está acontecendo."
+          ],
+          ask: [
+            "O que está pesando mais: trabalho, casa, família, dinheiro… ou tudo junto?",
+            "Quando foi a última vez que você descansou de verdade, sem culpa?",
+            "Tem algo dessa lista que dá para deixar para depois — ou pedir ajuda?"
+          ],
+          tip: [
+            "Um respiro rápido que funciona: pare por 1 minuto, inspire contando até 4 e solte o ar contando até 6. Quer fazer comigo na respiração guiada? Responda “sim” ou toque no cartão de respiração.",
+            "Tente separar o que é urgente do que só parece urgente. Escrever a lista no papel tira um peso enorme da cabeça."
+          ],
+          offer: "breath"
+        },
+        raiva: {
+          keys: ["raiva", "irritad", "odio", "injust", "revolt", "furios", "explod"],
+          val: [
+            "Dá para sentir sua indignação, e ela tem um motivo. A raiva, no fundo, costuma avisar que algo importante para você foi desrespeitado.",
+            "Você tem todo o direito de estar chateada. Aqui você pode soltar, sem precisar se segurar.",
+            "Estou ouvindo. Às vezes a gente segura tanto que, quando percebe, está prestes a explodir."
+          ],
+          ask: [
+            "O que aconteceu? Me conta com calma, do seu jeito.",
+            "O que mais te doeu nessa situação: o que foi feito, ou o que foi dito?",
+            "Você conseguiu falar com a pessoa, ou está guardando tudo aí dentro?"
+          ],
+          tip: [
+            "Antes de responder qualquer coisa no calor do momento: beba um copo de água, lave o rosto com água fria e dê uns minutos. Decidir com o corpo calmo muda tudo.",
+            "Se a vontade de explodir vier forte, aperte uma almofada, amasse um papel ou caminhe um quarteirão. O corpo precisa gastar essa energia de um jeito seguro."
+          ],
+          offer: null
+        },
+        solidao: {
+          keys: ["sozinh", "solidao", "ninguem", "abandon", "isolad", "sem amigos", "ninguem me entende", "ninguem se importa"],
+          val: [
+            "Sentir-se sozinha mesmo cercada de gente é uma das dores mais silenciosas que existem. Obrigada por dividir isso comigo — aqui, você tem companhia.",
+            "Eu estou aqui, e o que você sente importa. A solidão não diz nada de errado sobre você, viu?",
+            "Que bom que você falou. Guardar essa sensação sozinha só faz ela crescer."
+          ],
+          ask: [
+            "Essa sensação é recente ou você vem se sentindo assim há um tempo?",
+            "Tem alguém de quem você sente falta em especial?",
+            "O que você acha que faria você se sentir um pouquinho mais conectada hoje?"
+          ],
+          tip: [
+            "Um passo pequeno pode ajudar: mande uma mensagem simples para alguém de quem você gosta — um “oi, lembrei de você”. Conexão se constrói em gestos pequenos.",
+            "Sair um pouco de casa, nem que seja para um café ou uma volta no quarteirão, muda o cenário da mente. O mundo lá fora lembra a gente de que fazemos parte dele."
+          ],
+          offer: null
+        },
+        luto: {
+          keys: ["luto", "morreu", "falec", "perdi meu", "perdi minha", "saudade", "se foi", "velorio"],
+          val: [
+            "Sinto muito pela sua perda. O luto não tem prazo nem jeito certo — cada dia é um dia, e sentir saudade é também uma forma de amor.",
+            "Obrigada por confiar em mim num momento tão delicado. Você não precisa ser forte aqui.",
+            "Perder alguém que amamos muda o mundo da gente. Estou aqui para te ouvir, no seu tempo."
+          ],
+          ask: [
+            "Quer me contar um pouco sobre essa pessoa? Às vezes falar dela mantém a memória viva e alivia.",
+            "Como você tem passado os dias desde então?",
+            "Tem algo que você sente que ficou por dizer?"
+          ],
+          tip: [
+            "Permita-se viver os dias bons sem culpa e os dias ruins sem pressa. E, se fizer sentido para você, escrever uma carta para quem partiu — mesmo sem enviar — ajuda a organizar o coração.",
+            "Cuidar do básico importa muito no luto: comer um pouco, dormir o que der, aceitar ajuda de quem oferece. Você não precisa atravessar isso sozinha."
+          ],
+          offer: null
+        },
+        relacionamento: {
+          keys: ["marido", "esposa", "esposo", "namorad", "relacionamento", "brig", "termin", "separ", "trai", "ciume", "mae", "pai", "filho", "filha", "familia", "sogra", "amiga", "amigo"],
+          val: [
+            "Relacionamentos mexem fundo com a gente, porque envolvem quem a gente mais ama. Faz sentido isso estar te pesando.",
+            "Obrigada por me contar. Conflito com quem importa dói de um jeito diferente, né?",
+            "Estou aqui para ouvir o seu lado, com calma e sem tomar partido."
+          ],
+          ask: [
+            "O que aconteceu entre vocês? Me conta do seu jeito.",
+            "Você já tentou conversar sobre isso com a pessoa? Como foi?",
+            "O que você mais queria que essa pessoa entendesse sobre você?"
+          ],
+          tip: [
+            "Na hora de conversar, trocar acusações por sentimentos ajuda muito: em vez de “você sempre…”, tente “eu me sinto… quando…”. A pessoa escuta melhor e a conversa rende mais.",
+            "Se a conversa estiver muito quente, combinar uma pausa (“vamos respirar e voltar a falar em 20 minutos”) evita palavras que machucam e não voltam."
+          ],
+          offer: null
+        },
+        autoestima: {
+          keys: ["inutil", "fracass", "incapaz", "vergonha", "culpa", "culpad", "feia", "burra", "nao presto", "nao sou boa", "nao consigo nada", "todo mundo melhor"],
+          val: [
+            "Ei… essa voz dura que fala aí dentro não conta a verdade sobre você. Todo mundo erra e tem dias ruins — isso não te faz menos valiosa.",
+            "Sinto muito que você esteja se vendo assim hoje. Costumamos ser muito mais duras com a gente do que seríamos com uma amiga querida.",
+            "Você vale muito mais do que esse momento difícil está fazendo parecer. Estou aqui para te ajudar a enxergar isso."
+          ],
+          ask: [
+            "O que aconteceu para você se sentir assim hoje?",
+            "Se uma amiga sua estivesse no seu lugar, o que você diria para ela?",
+            "Tem alguma coisa — por menor que seja — que você fez bem ultimamente e nem percebeu?"
+          ],
+          tip: [
+            "Um exercício simples: complete a frase “hoje eu consegui…” com algo pequeno. Levantar, cuidar de alguém, terminar uma tarefa. Registrar vitórias pequenas muda o olhar aos poucos.",
+            "Quando a autocrítica vier, pergunte: “eu falaria assim com alguém que eu amo?” Se não falaria, tente repetir a frase com o carinho que você daria a ela."
+          ],
+          offer: null
+        },
+        sono: {
+          keys: ["dormir", "insonia", "sono", "acordo", "pesadelo", "madrugada", "sem dormir"],
+          val: [
+            "Noite mal dormida cobra caro no dia seguinte: o humor, a paciência, a energia. Imagino como você deve estar.",
+            "Quando o sono não vem, a mente aproveita para passar o filme das preocupações, né? É exaustivo.",
+            "Estou aqui. Me conta como têm sido suas noites."
+          ],
+          ask: [
+            "Você demora para pegar no sono, ou acorda no meio da noite?",
+            "O que costuma passar pela sua cabeça quando deita?",
+            "Como anda sua rotina antes de dormir — celular, café, cochilo à tarde…?"
+          ],
+          tip: [
+            "Um ritual ajuda muito: 30 minutos antes de deitar, diminua as luzes, largue o celular e faça algo calmo. E, se o sono não vier em uns 20 minutos, levante, vá para outro cômodo e volte quando o sono aparecer.",
+            "Anotar as preocupações num papel antes de deitar “estaciona” a mente: “amanhã eu cuido disso”. Muita gente dorme melhor só com esse gesto."
+          ],
+          offer: null
+        },
+        trabalho: {
+          keys: ["trabalho", "emprego", "chefe", "demit", "dinheiro", "contas", "divida", "boleto", "salario", "desempreg", "clientes", "vendas"],
+          val: [
+            "Preocupação com trabalho e dinheiro drena a gente por dentro, porque mexe com segurança e com o futuro. Faz sentido estar pesando.",
+            "Você está se esforçando — dá para perceber. Nem sempre o resultado acompanha o esforço, e isso frustra mesmo.",
+            "Estou aqui para ouvir. Às vezes organizar os pensamentos já deixa o problema um pouco menor."
+          ],
+          ask: [
+            "O que está acontecendo no trabalho (ou com as contas) que mais te preocupa?",
+            "Tem alguma parte desse problema que está nas suas mãos resolver nesta semana?",
+            "Você tem conseguido descansar a cabeça fora do horário de trabalho?"
+          ],
+          tip: [
+            "Quando o problema parece gigante, divida: o que eu resolvo hoje, o que fica para a semana, o que não depende de mim. Só a primeira listinha já devolve uma sensação de controle.",
+            "Se a cabeça não desliga depois do trabalho, crie um “fechamento do dia”: anote o que ficou pendente e feche o caderno. É um sinal para o cérebro de que o expediente acabou."
+          ],
+          offer: null
+        }
+      };
+
+      const FALLBACKS = [
+        "Estou aqui, te ouvindo com atenção. Me conta um pouco mais sobre isso — o que você sente quando pensa nisso?",
+        "Obrigada por compartilhar comigo. Isso parece importante para você. O que mais te mexe nisso tudo?",
+        "Entendo… Às vezes só colocar em palavras já alivia um pouco. Quer me contar como isso começou?",
+        "Estou aqui com você. Se fosse para dar um nome ao que você está sentindo agora, qual seria?",
+        "Faz sentido você se sentir assim. Me fala mais — estou ouvindo, sem pressa."
+      ];
+
+      function detectEmotion(n) {
+        let best = null, bestScore = 0;
+        for (const key in EMOTIONS) {
+          let score = 0;
+          EMOTIONS[key].keys.forEach(k => { if (n.includes(k)) score += k.length > 5 ? 2 : 1; });
+          if (score > bestScore) { bestScore = score; best = key; }
+        }
+        return bestScore > 0 ? best : null;
+      }
+
+      function emotionReply(key) {
+        const e = EMOTIONS[key];
+        pendingOffer = e.offer;
+        const msgs = [rotate("val_" + key, e.val), rotate("ask_" + key, e.ask)];
+        if (turnCount % 2 === 1) msgs.push(rotate("tip_" + key, e.tip));
+        return msgs;
+      }
+
+      function brain(rawText) {
+        const text = rawText.trim();
+        const n = norm(text);
+        turnCount++;
+
+        // Crisis first — always.
+        if (CRISIS.some(k => n.includes(k))) {
+          pendingOffer = null;
+          liaSay([
+            "Obrigada por ter coragem de me falar isso. O que você sente é importante, e a sua vida importa muito — mesmo que agora esteja difícil de acreditar.",
+            "Eu sou um aplicativo e, neste momento, quem pode te ajudar de verdade é uma pessoa. Por favor, ligue agora para o CVV no 188: é gratuito, sigiloso e funciona 24 horas. Se você estiver em perigo imediato, ligue 192.",
+            "Você não está sozinha. Fica aqui comigo o quanto precisar — e, se tiver alguém de confiança por perto, chame essa pessoa para ficar com você."
+          ]);
+          setTimeout(addCrisisCard, 2600);
+          return;
+        }
+
+        // Name capture
+        const nameMatch = text.match(/(?:me chamo|meu nome é|meu nome e|sou a|sou o)\s+([A-Za-zÀ-ÿ]{2,20})/i);
+        if (nameMatch && !userName) {
+          userName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase();
+          liaSay(["Que bom te conhecer, " + userName + ". Este espaço é seu: pode falar do que quiser, no seu ritmo. Como você está se sentindo hoje, de verdade?"]);
+          return;
+        }
+
+        // Greetings
+        if (/^(oi|ola|olá|ei|bom dia|boa tarde|boa noite|hey)\b/.test(n) && text.length < 30) {
+          liaSay(["Olá" + (userName ? ", " + userName : "") + "! Que bom que você veio. Este é um espaço só seu, sem julgamentos. Como você está se sentindo hoje?"]);
+          return;
+        }
+        // Thanks
+        if (n.includes("obrigad") || n.includes("valeu")) {
+          liaSay([pick([
+            "Imagina, eu que agradeço a confiança. Cuidar de você é o motivo de eu estar aqui.",
+            "Fico feliz em ajudar, de verdade. Sempre que precisar conversar, é só voltar.",
+            "De nada — e lembra: pedir ajuda e desabafar já é um gesto de força, não de fraqueza."
+          ])]);
+          return;
+        }
+        // Goodbye
+        if (/^(tchau|adeus|vou indo|ate mais|até mais|boa noite)$/.test(n) || n === "tchau") {
+          liaSay(["Vai com calma" + (userName ? ", " + userName : "") + ". Cuida de você — descansa, bebe água e lembra que você não está sozinha. Estarei aqui quando quiser conversar de novo."]);
+          return;
+        }
+
+        // Short yes/no — follow pending offer
+        const isYes = /^(sim|quero|pode ser|vamos|bora|claro|aceito|ta bom|tá bom|ok|uhum|aham)\b/.test(n);
+        const isNo = /^(nao|não|agora nao|depois|prefiro nao)\b/.test(n);
+        if ((isYes || isNo) && text.length < 26) {
+          if (isYes && pendingOffer === "breath") {
+            pendingOffer = null;
+            liaSay(["Ótimo. Encontre uma posição confortável e toque em “Começar” no cartão de Respiração Guiada aqui " + (window.innerWidth <= 860 ? "em Ferramentas" : "ao lado") + ". Eu fico aqui com você — quando terminar, me conta como se sentiu."]);
+            startBreathing();
+            document.getElementById("sidePanel").classList.add("open");
+            return;
+          }
+          if (isYes && lastEmotion) {
+            liaSay([rotate("ask_" + lastEmotion, EMOTIONS[lastEmotion].ask)]);
+            return;
+          }
+          if (isNo) {
+            pendingOffer = null;
+            liaSay(["Tudo bem, sem pressa — a gente faz do seu jeito. Quer me contar mais sobre o que está sentindo, ou prefere mudar de assunto?"]);
+            return;
+          }
+          liaSay(["Que bom. Me conta mais sobre isso, então — estou ouvindo."]);
+          return;
+        }
+
+        // "Não sei"
+        if (n.includes("nao sei") || n.includes("sei la") || n.includes("confus")) {
+          liaSay([
+            "Tudo bem não saber. Às vezes o sentimento vem bagunçado mesmo, e a gente só sabe que não está bem.",
+            "Vamos por partes: neste momento, o que pesa mais — a cabeça, o coração ou o corpo cansado? Se preferir, toque num dos temas aqui embaixo da conversa e a gente começa por ele."
+          ]);
+          return;
+        }
+
+        // Emotion-based response
+        const emo = detectEmotion(n);
+        if (emo) {
+          lastEmotion = emo;
+          liaSay(emotionReply(emo));
+          return;
+        }
+
+        // Continue previous emotion thread with a follow-up question
+        if (lastEmotion && turnCount > 2 && Math.random() < 0.45) {
+          liaSay([rotate("ask_" + lastEmotion, EMOTIONS[lastEmotion].ask)]);
+          return;
+        }
+
+        liaSay([rotate("fallback", FALLBACKS)]);
+      }
+
+      /* ================= Send flow ================= */
+      function send(textFromChip) {
+        const text = (typeof textFromChip === "string" ? textFromChip : inputEl.value).trim();
+        if (!text) return;
+        addMsg("user", text);
+        if (typeof textFromChip !== "string") { inputEl.value = ""; inputEl.style.height = "auto"; }
+        brain(text);
+      }
+      $("#sendBtn").addEventListener("click", () => send());
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+      });
+      inputEl.addEventListener("input", () => {
+        inputEl.style.height = "auto";
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+      });
+      document.querySelectorAll(".chip").forEach(chip => {
+        chip.addEventListener("click", () => send(chip.getAttribute("data-say")));
+      });
+
+      /* ================= Mood check-in ================= */
+      const MOOD_MSGS = {
+        1: "Sinto muito que hoje esteja tão difícil. Você fez bem em vir conversar — me conta o que está acontecendo, sem pressa.",
+        2: "Dias ruins pesam, né? Estou aqui para te ouvir. Quer me contar o que está te deixando assim?",
+        3: "Um dia “mais ou menos” também merece cuidado. Se quiser, me conta o que está ocupando sua cabeça hoje.",
+        4: "Que bom saber que você está bem! Se quiser, me conta o que tem feito bem para você — guardar o que funciona ajuda nos dias difíceis.",
+        5: "Que maravilha! Fico feliz por você. Me conta o que tornou o dia de hoje especial?"
+      };
+      const MOOD_NOTES = {
+        1: "Registrado: hoje está pesado. A Lia já sabe — desabafe na conversa, ela te acolhe.",
+        2: "Registrado: dia difícil. Conversar pode aliviar — conte com a Lia.",
+        3: "Registrado: mais ou menos. Um desabafo pode deixar o dia mais leve.",
+        4: "Registrado: você está bem. Que continue assim!",
+        5: "Registrado: dia ótimo por aí. Aproveita essa energia boa!"
+      };
+      document.querySelectorAll(".mood-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("sel"));
+          btn.classList.add("sel");
+          const m = btn.getAttribute("data-mood");
+          $("#moodNote").textContent = MOOD_NOTES[m];
+          liaSay([MOOD_MSGS[m]]);
+        });
+      });
+
+      /* ================= Breathing ================= */
+      const PHASES = [
+        { label: "Inspire", sec: 4, scale: 1.28 },
+        { label: "Segure", sec: 4, scale: 1.28 },
+        { label: "Expire", sec: 6, scale: 1.0 }
+      ];
+      let breathing = false, breathTimer = null, breathCycles = 0;
+      const circle = $("#breathCircle"), bCount = $("#breathCount"), bBtn = $("#breathBtn");
+
+      function runPhase(i) {
+        if (!breathing) return;
+        const p = PHASES[i];
+        circle.textContent = p.label;
+        circle.style.transition = "transform " + p.sec + "s ease-in-out";
+        circle.style.transform = "scale(" + p.scale + ")";
+        let left = p.sec;
+        bCount.textContent = p.label + "… " + left;
+        clearInterval(breathTimer);
+        breathTimer = setInterval(() => {
+          left--;
+          if (left > 0) { bCount.textContent = p.label + "… " + left; }
+          else {
+            clearInterval(breathTimer);
+            if (i === PHASES.length - 1) {
+              breathCycles++;
+              liaSayOnce();
+            }
+            runPhase((i + 1) % PHASES.length);
+          }
+        }, 1000);
+      }
+      let breathCelebrated = false;
+      function liaSayOnce() {
+        if (breathCycles === 3 && !breathCelebrated) {
+          breathCelebrated = true;
+          addMsg("lia", "Você completou 3 ciclos de respiração. Perceba como o corpo está agora — ombros, peito, cabeça. Se quiser, continue mais um pouco; estou aqui.");
+        }
+      }
+      function startBreathing() {
+        if (breathing) return;
+        breathing = true; breathCycles = 0; breathCelebrated = false;
+        bBtn.textContent = "Parar";
+        runPhase(0);
+      }
+      function stopBreathing() {
+        breathing = false;
+        clearInterval(breathTimer);
+        circle.style.transition = "transform 1s ease";
+        circle.style.transform = "scale(1)";
+        circle.textContent = "Respire";
+        bCount.textContent = "Toque em começar quando estiver pronta.";
+        bBtn.textContent = "Começar";
+      }
+      bBtn.addEventListener("click", () => { breathing ? stopBreathing() : startBreathing(); });
+
+      /* ================= Grounding 5-4-3-2-1 ================= */
+      const GROUND_STEPS = [
+        { t: "5 coisas que você VÊ", d: "Olhe ao redor e nomeie, em voz alta ou mentalmente, 5 coisas que você consegue ver agora." },
+        { t: "4 coisas que você TOCA", d: "Perceba 4 sensações de toque: a roupa na pele, os pés no chão, a cadeira, o celular na mão…" },
+        { t: "3 coisas que você OUVE", d: "Escute com atenção e identifique 3 sons, perto ou longe." },
+        { t: "2 coisas que você CHEIRA", d: "Sinta 2 cheiros ao seu redor. Se não houver, lembre de 2 cheiros que você adora." },
+        { t: "1 coisa que você SABOREIA", d: "Perceba 1 sabor na sua boca — ou tome um gole de água sentindo o sabor e a temperatura." },
+        { t: "Você conseguiu.", d: "Respire fundo uma vez. Você está aqui, no presente, e está segura agora. Volte para a conversa quando quiser — estou aqui." }
+      ];
+      let groundIdx = -1;
+      const gBtn = $("#groundBtn"), gStep = $("#groundStep");
+      gBtn.addEventListener("click", () => {
+        groundIdx++;
+        if (groundIdx >= GROUND_STEPS.length) {
+          groundIdx = -1;
+          gStep.innerHTML = "<strong>Vamos começar?</strong>Toque em “Iniciar” e siga um passo de cada vez, sem pressa.";
+          gBtn.textContent = "Iniciar";
+          return;
+        }
+        const s = GROUND_STEPS[groundIdx];
+        gStep.innerHTML = "<strong>" + s.t + "</strong>" + s.d;
+        gBtn.textContent = groundIdx === GROUND_STEPS.length - 1 ? "Concluir" : "Próximo passo";
+      });
+
+      /* ================= Gratitude journal ================= */
+      const gratEntries = [];
+      $("#gratSave").addEventListener("click", () => {
+        const vals = [$("#grat1").value, $("#grat2").value, $("#grat3").value].map(v => v.trim()).filter(Boolean);
+        if (!vals.length) { liaSay(["Para guardar no diário, escreve pelo menos uma coisinha boa de hoje — pode ser bem pequena, tipo “tomei um café gostoso”. Pequeno também conta."]); return; }
+        const entry = { date: new Date().toLocaleDateString("pt-BR") + " · " + nowTime(), items: vals };
+        gratEntries.push(entry);
+        const li = document.createElement("li");
+        li.innerHTML = "";
+        const small = document.createElement("small");
+        small.textContent = entry.date;
+        li.appendChild(small);
+        li.appendChild(document.createTextNode(vals.join(" · ")));
+        $("#gratList").prepend(li);
+        ["#grat1", "#grat2", "#grat3"].forEach(id => { $(id).value = ""; });
+        liaSay([pick([
+          "Guardei no seu diário. Reparar nas coisas boas, mesmo nas pequenas, é um treino que fortalece a gente por dentro.",
+          "Pronto, registrado. Nos dias difíceis, reler esse diário pode te lembrar que coisas boas também acontecem."
+        ])]);
+      });
+      $("#gratDownload").addEventListener("click", () => {
+        if (!gratEntries.length) { liaSay(["Seu diário ainda está vazio — escreve a primeira anotação e depois baixe para guardar no seu celular."]); return; }
+        let txt = "Meu Diário de Gratidão\n\n";
+        gratEntries.slice().reverse().forEach(e => {
+          txt += e.date + "\n" + e.items.map(i => "  • " + i).join("\n") + "\n\n";
+        });
+        const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "diario-de-gratidao.txt";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      /* ================= Affirmations ================= */
+      const AFFIRMS = [
+        "Você não precisa dar conta de tudo hoje. Um passo de cada vez já é caminho.",
+        "Sentir não é fraqueza. Sentir é ser humana — e você está fazendo o seu melhor.",
+        "Você já atravessou dias muito difíceis antes. Esse também vai passar.",
+        "Descanse sem culpa: quem descansa, continua. Quem desiste de si, não.",
+        "Você merece o mesmo carinho que oferece para todo mundo.",
+        "Nem tudo está sob seu controle — e tudo bem. Cuide da parte que está nas suas mãos.",
+        "Pedir ajuda é um gesto de coragem. Você não precisa carregar tudo sozinha.",
+        "Hoje pode não ser um dia bom, mas pode ter um momento bom. Procure por ele.",
+        "Sua história vale mais do que o capítulo difícil que você está vivendo agora.",
+        "Respire. Você está aqui, você importa, e você não está sozinha."
+      ];
+      let lastAffirm = 0;
+      $("#affirmBtn").addEventListener("click", () => {
+        let i;
+        do { i = Math.floor(Math.random() * AFFIRMS.length); } while (i === lastAffirm);
+        lastAffirm = i;
+        $("#affirmText").textContent = AFFIRMS[i];
+      });
+
+      /* ================= TTS ================= */
+      let ttsOn = false;
+      const ttsBtn = $("#ttsBtn");
+      function speak(text) {
+        if (!("speechSynthesis" in window)) return;
+        try {
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = "pt-BR";
+          u.rate = 0.98;
+          const voices = speechSynthesis.getVoices();
+          const v = voices.find(v => /pt-BR/i.test(v.lang)) || voices.find(v => /^pt/i.test(v.lang));
+          if (v) u.voice = v;
+          speechSynthesis.speak(u);
+        } catch (e) { /* sem voz disponível */ }
+      }
+      ttsBtn.addEventListener("click", () => {
+        ttsOn = !ttsOn;
+        ttsBtn.setAttribute("aria-pressed", String(ttsOn));
+        if (!ttsOn && "speechSynthesis" in window) speechSynthesis.cancel();
+        if (ttsOn) speak("Pronto, agora eu leio minhas mensagens em voz alta para você.");
+      });
+
+      /* ================= Voice input ================= */
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const micBtn = $("#micBtn");
+      if (SR) {
+        micBtn.hidden = false;
+        const rec = new SR();
+        rec.lang = "pt-BR";
+        rec.interimResults = true;
+        let recording = false;
+        rec.onresult = (e) => {
+          let finalTxt = "", interim = "";
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
+            else interim += e.results[i][0].transcript;
+          }
+          inputEl.value = finalTxt || interim;
+        };
+        rec.onend = () => {
+          recording = false;
+          micBtn.classList.remove("recording");
+          if (inputEl.value.trim()) send();
+        };
+        rec.onerror = () => { recording = false; micBtn.classList.remove("recording"); };
+        micBtn.addEventListener("click", () => {
+          if (recording) { rec.stop(); }
+          else {
+            try { rec.start(); recording = true; micBtn.classList.add("recording"); } catch (e) { /* já ouvindo */ }
+          }
+        });
+      }
+
+      /* ================= Tools toggle (mobile) ================= */
+      const sidePanel = $("#sidePanel");
+      $("#toolsBtn").addEventListener("click", (e) => {
+        const open = sidePanel.classList.toggle("open");
+        e.currentTarget.setAttribute("aria-expanded", String(open));
+        if (open) sidePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
+      /* ================= Welcome ================= */
+      setTimeout(() => {
+        liaSay([
+          "Olá! Eu sou a Lia, sua terapeuta virtual. Este é um cantinho seguro, só seu, para desabafar sem medo de julgamento.",
+          "Pode me contar como você está se sentindo hoje — com palavras suas, do seu jeito. Se preferir, toque em um dos temas aqui embaixo ou me diga seu nome para a gente se conhecer melhor."
+        ], 500);
+      }, 350);
+    </script>
+  </body>
+</html>
