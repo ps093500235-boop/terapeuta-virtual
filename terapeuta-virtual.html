@@ -291,19 +291,6 @@
         color: var(--ink-soft);
         margin: 2px 6px 0;
       }
-      .speak-btn {
-        margin-top: 5px;
-        border: 1px solid var(--line);
-        background: var(--accent-soft);
-        color: var(--accent-strong);
-        border-radius: 999px;
-        padding: 4px 11px;
-        font-size: 13px;
-        font-weight: 800;
-        display: inline-flex; align-items: center; gap: 5px;
-      }
-      .speak-btn svg { width: 14px; height: 14px; flex: 0 0 14px; }
-      .speak-btn:active { background: var(--accent); color: #fff; }
       .time-wrap { display: flex; flex-direction: column; }
       .msg-row.user .time-wrap { align-items: flex-end; }
       .msg-row.lia .time-wrap { align-items: flex-start; }
@@ -410,9 +397,6 @@
       }
       .round-btn svg { width: 21px; height: 21px; }
       .send-btn { background: var(--accent); color: #fff; }
-      .mic-btn { background: var(--surface-2); border: 1.5px solid var(--line); color: var(--ink); }
-      .mic-btn.recording { background: var(--rose); border-color: var(--rose); color: #fff; animation: pulse 1.2s infinite; }
-      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
       .help-line {
         text-align: center;
         font-size: 13.5px;
@@ -652,7 +636,7 @@
         .page-head h1 { font-size: 20px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .typing span, .mic-btn.recording { animation: none; }
+        .typing span { animation: none; }
         .messages { scroll-behavior: auto; }
       }
     </style>
@@ -714,10 +698,6 @@
             <div class="status"><span class="dot"></span> assistente virtual (IA) de acolhimento emocional</div>
           </div>
           <div class="head-actions">
-            <button class="icon-btn" id="ttsBtn" aria-pressed="true" title="Ouvir as respostas da Lia em voz alta">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-              Ouvir
-            </button>
             <button class="icon-btn" id="closeBtn" title="Encerrar a conversa com um resumo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
               Encerrar
@@ -740,9 +720,6 @@
         <div class="composer">
           <div class="composer-row">
             <textarea id="input" rows="1" placeholder="Escreva aqui, do seu jeito…" aria-label="Escreva sua mensagem"></textarea>
-            <button class="round-btn mic-btn" id="micBtn" title="Falar por voz" aria-label="Falar por voz" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
-            </button>
             <button class="round-btn send-btn" id="sendBtn" title="Enviar" aria-label="Enviar mensagem">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
             </button>
@@ -976,8 +953,6 @@
       let summaryDone = false;
       let voicesCheck = false;
       let started = false;
-      let suppressSpeak = false; // true durante o fluxo de crise: só a fala de crise toca, uma vez
-      let crisisSpoken = false;
       const usedIdx = {};
 
       /* Histórico recente enviado ao servidor a cada mensagem (conversa via IA) */
@@ -1024,21 +999,11 @@
         time.className = "msg-time";
         time.textContent = nowTime();
         wrap.appendChild(bubble);
-        if (who === "lia") {
-          const sb = document.createElement("button");
-          sb.type = "button";
-          sb.className = "speak-btn";
-          sb.setAttribute("aria-label", "Ouvir esta mensagem da Lia em voz alta");
-          sb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg> Ouvir';
-          sb.addEventListener("click", () => speakAloud(text));
-          wrap.appendChild(sb);
-        }
         wrap.appendChild(time);
         row.appendChild(wrap);
         messagesEl.appendChild(row);
         scrollDown();
         pushHistory(who, text);
-        if (who === "lia" && ttsOn && !suppressSpeak) speak(text);
       }
       function scrollDown() {
         requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
@@ -1175,15 +1140,11 @@
 
       function redFlow() {
         stage = "chat"; voicesCheck = false; pendingOffer = null; clearQR();
-        // Crise: a Lia FALA a orientação uma única vez, mesmo com o botão Ouvir desligado.
-        // As mensagens escritas do fluxo não são lidas em seguida (sem fala dupla).
-        suppressSpeak = true;
-        speakCrisisOnce();
         liaSay([
           "Obrigado por me contar. O que você está vivendo precisa de apoio humano agora — eu sou uma inteligência artificial e não consigo chamar socorro por você.",
           "Se você está em perigo imediato, ligue agora para o SAMU 192 ou vá a uma UPA ou pronto-socorro. Não fique sozinha(o): procure uma pessoa de confiança e diga: “Não estou segura(o) sozinha(o). Preciso que fique comigo e me ajude a buscar atendimento.”",
           "O CVV, no 188, também atende de graça, com sigilo, 24 horas. Vou te mostrar a tela de ajuda com tudo isso organizado."
-        ], undefined, () => { suppressSpeak = false; });
+        ]);
         setTimeout(addCrisisCard, 4200);
         setTimeout(() => { showView("help"); }, 7500);
       }
@@ -1621,7 +1582,6 @@
         userName = ""; userMood = null; lastEmotion = null; topicLabel = "";
         lastUserText = ""; pendingOffer = null; turnCount = 0; topicTurns = 0;
         summaryDone = false; voicesCheck = false;
-        suppressSpeak = false; crisisSpoken = false;
         chatHistory.length = 0; apiTurns = 0; lastApiText = "";
         Object.keys(usedIdx).forEach(k => delete usedIdx[k]);
         $$(".mood-btn").forEach(b => b.classList.remove("sel"));
@@ -1855,155 +1815,6 @@
         e.target.textContent = "Apagar tudo";
         ["#mapSituacao", "#mapEmocoes", "#mapPensamentos", "#mapNecessidades", "#mapRecursos", "#mapPasso"].forEach(id => { $(id).value = ""; });
       });
-
-      /* ================= TTS ================= */
-      // Voz ligada por padrão: a Lia fala desde a primeira mensagem, logo após o
-      // toque em "Começar a conversar" (o toque libera o áudio no navegador).
-      // O botão Ouvir no topo continua ligando/desligando a leitura automática.
-      let ttsOn = true;
-      const ttsBtn = $("#ttsBtn");
-      // Voz feminina suave: prefere vozes femininas em português (Maria,
-      // Luciana, Francisca, Google português…) e fala um pouco mais devagar,
-      // com tom levemente mais agudo e macio — como uma conversa acolhedora.
-      let liaVoice = null;
-      // Voz feminina suave — seleção rigorosa:
-      // 1) só vozes femininas conhecidas, em português de preferência;
-      // 2) vozes masculinas conhecidas são excluídas explicitamente;
-      // 3) se nenhuma feminina em português existir, usa feminina de outro
-      //    idioma antes de cair para qualquer voz em português.
-      const FEMALE_VOICES = [
-        // ordem de preferência (nomes reais das vozes nos sistemas)
-        "google português do brasil", "google português",
-        "microsoft francisca", "microsoft leticia", "microsoft letícia",
-        "francisca", "leticia", "letícia",
-        "luciana", // iOS/macOS pt-BR feminina
-        "maria", "mari", "camila", "vitoria", "vitória", "fernanda",
-        "ana", "alice", "amelia", "amélia", "bruna", "beatriz",
-        "samantha", "zira", "aria", "jenny", "joana", "ines", "inês",
-        "female", "feminina", "woman"
-      ];
-      const MALE_VOICES = ["daniel", "felipe", "ricardo", "jorge", "joão", "joao",
-        "paulo", "antonio", "antónio", "miguel", "david", "mark", "george",
-        "thiago", "diego", "carlos", "pedro", "male", "masculin", "homem"];
-      function voiceScore(v) {
-        const name = (v.name || "").toLowerCase();
-        const lang = (v.lang || "").replace("_", "-").toLowerCase();
-        if (MALE_VOICES.some(nm => name.includes(nm))) return -100;
-        let s = 0;
-        const fi = FEMALE_VOICES.findIndex(nm => name.includes(nm));
-        if (fi >= 0) s += 120 - fi * 2; // feminina conhecida, na ordem acima
-        if (lang === "pt-br") s += 60;
-        else if (lang.indexOf("pt") === 0) s += 40;
-        else if (fi >= 0) s += 10; // feminina de outro idioma ainda vale
-        if (name.includes("google")) s += 8;
-        if (name.includes("microsoft")) s += 6;
-        if (name.includes("natural") || name.includes("neural")) s += 6;
-        return s;
-      }
-      function pickLiaVoice() {
-        if (!("speechSynthesis" in window)) return;
-        const voices = speechSynthesis.getVoices();
-        if (!voices.length) return;
-        const ranked = voices.slice().sort((a, b) => voiceScore(b) - voiceScore(a));
-        const best = ranked[0];
-        // Só aceita a melhor se for feminina conhecida ou estiver em pt;
-        // caso contrário mantém null e o navegador usa o padrão com o
-        // tom/ritmo suaves definidos em speak().
-        liaVoice = (best && voiceScore(best) > 0) ? best : null;
-      }
-      if ("speechSynthesis" in window) {
-        pickLiaVoice();
-        speechSynthesis.onvoiceschanged = pickLiaVoice;
-        // Alguns navegadores (Android/Chrome) entregam as vozes um pouco
-        // depois; tenta de novo para não perder a voz feminina em pt-BR.
-        setTimeout(pickLiaVoice, 250);
-        setTimeout(pickLiaVoice, 1000);
-      }
-      // Prepara o texto para uma leitura macia: pausas entre frases e
-      // respiro depois de vírgulas longas, sem alterar o que aparece na tela.
-      function softenText(text) {
-        return String(text || "")
-          .replace(/\s+/g, " ")
-          .replace(/([.!?…])\s+/g, "$1  ")
-          .replace(/(—|--)\s*/g, ", ")
-          .trim();
-      }
-      function speak(text) {
-        if (!("speechSynthesis" in window)) return;
-        try {
-          if (!liaVoice) pickLiaVoice();
-          const clean = softenText(text);
-          if (!clean) return;
-          // Fala frase a frase: evita o corte de falas longas no Chrome e
-          // deixa a leitura mais calma, com pausa natural entre as frases.
-          const parts = clean.match(/[^.!?…]+[.!?…]*\s*/g) || [clean];
-          parts.forEach((part) => {
-            const t = part.trim();
-            if (!t) return;
-            const u = new SpeechSynthesisUtterance(t);
-            u.lang = "pt-BR";
-            u.rate = 0.88;   // mais devagar = mais suave e acolhedor
-            u.pitch = 1.08;  // levemente mais agudo, sem ficar artificial
-            u.volume = 1;
-            if (liaVoice) { u.voice = liaVoice; u.lang = liaVoice.lang || "pt-BR"; }
-            speechSynthesis.speak(u);
-          });
-        } catch (e) { /* sem voz disponível */ }
-      }
-      // Leitura sob demanda (botão Ouvir de cada bolha): para o que estiver
-      // tocando e lê só aquela mensagem — funciona com a leitura automática desligada.
-      function speakAloud(text) {
-        if (!("speechSynthesis" in window)) return;
-        try { speechSynthesis.cancel(); } catch (e) { /* nada tocando */ }
-        speak(text);
-      }
-      // Fala de crise: toca UMA vez por conversa, mesmo com o Ouvir desligado,
-      // cancelando qualquer fala pendente. Os números vão por extenso para a
-      // voz ler com clareza: SAMU 192 e CVV 188.
-      function speakCrisisOnce() {
-        if (crisisSpoken) return;
-        crisisSpoken = true;
-        if (!("speechSynthesis" in window)) return;
-        try { speechSynthesis.cancel(); } catch (e) { /* nada tocando */ }
-        speak("Você precisa de apoio humano agora. Não fique sozinha. Em perigo imediato, ligue para o SAMU, um nove dois. Para apoio emocional gratuito, a qualquer hora, ligue para o CVV, um oito oito.");
-      }
-      ttsBtn.addEventListener("click", () => {
-        ttsOn = !ttsOn;
-        ttsBtn.setAttribute("aria-pressed", String(ttsOn));
-        if (!ttsOn && "speechSynthesis" in window) speechSynthesis.cancel();
-        if (ttsOn) speak("Pronto, agora eu leio minhas mensagens em voz alta para você.");
-      });
-
-      /* ================= Voice input ================= */
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const micBtn = $("#micBtn");
-      if (SR) {
-        micBtn.hidden = false;
-        const rec = new SR();
-        rec.lang = "pt-BR";
-        rec.interimResults = true;
-        let recording = false;
-        rec.onresult = (e) => {
-          let finalTxt = "", interim = "";
-          for (let i = e.resultIndex; i < e.results.length; i++) {
-            if (e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
-            else interim += e.results[i][0].transcript;
-          }
-          inputEl.value = finalTxt || interim;
-        };
-        rec.onend = () => {
-          recording = false;
-          micBtn.classList.remove("recording");
-          if (inputEl.value.trim()) send();
-        };
-        rec.onerror = () => { recording = false; micBtn.classList.remove("recording"); };
-        micBtn.addEventListener("click", () => {
-          if (recording) { rec.stop(); }
-          else {
-            try { rec.start(); recording = true; micBtn.classList.add("recording"); } catch (e) { /* já ouvindo */ }
-          }
-        });
-      }
 
       /* ================= Tools toggle (mobile) ================= */
       const sidePanel = $("#sidePanel");
