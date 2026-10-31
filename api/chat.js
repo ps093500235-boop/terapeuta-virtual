@@ -63,7 +63,7 @@ export default async function handler(req, res) {
   ];
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), 40000);
 
   try {
     const r = await fetch(
@@ -73,6 +73,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: SYSTEM }] },
+          generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
           contents,
         }),
         signal: controller.signal,
