@@ -358,22 +358,6 @@
         .crisis-card a { color: #2a1512; }
       }
 
-      .chips {
-        display: none; flex-wrap: wrap; gap: 8px;
-        padding: 10px 16px 4px;
-      }
-      .chips.on { display: flex; }
-      .chip {
-        border: 1.5px solid var(--accent);
-        color: var(--accent-strong);
-        background: var(--surface);
-        border-radius: 999px;
-        padding: 7px 14px;
-        font-size: 14.5px;
-        font-weight: 700;
-      }
-      .chip:active { background: var(--accent-soft); }
-
       .quick-replies {
         display: none; flex-wrap: wrap; gap: 8px;
         padding: 10px 16px 2px;
@@ -751,7 +735,6 @@
 
         <div class="messages" id="messages" aria-live="polite"></div>
 
-        <div class="chips" id="chips" aria-label="Escolha o assunto da conversa"></div>
         <div class="quick-replies" id="quickReplies" aria-label="Respostas rápidas"></div>
 
         <div class="composer">
@@ -979,7 +962,6 @@
 
       const messagesEl = $("#messages");
       const inputEl = $("#input");
-      const chipsEl = $("#chips");
       const qrEl = $("#quickReplies");
 
       let userName = "";
@@ -1127,7 +1109,7 @@
           liaSay([
             "Obrigada pela sinceridade. Fico com você aqui — e deixo uma orientação importante: se o sofrimento estiver intenso ou piorando, procure uma UBS, um CAPS ou um profissional de saúde em prazo breve. O CVV (188) também atende 24 horas, de graça.",
             "Quer me contar o que está pesando mais agora?"
-          ], undefined, () => { renderTopics(); });
+          ]);
         }
         else if (action === "yellow-unsafe") { redFlow(); }
         else if (action === "voices-safe") {
@@ -1217,30 +1199,6 @@
             { label: "Não me sinto segura(o)", action: "yellow-unsafe", cls: "danger" }
           ]);
         });
-      }
-
-      /* ================= Topics (manual, seção 3) ================= */
-      const TOPICS = [
-        { label: "Ansiedade / estresse", say: "Estou me sentindo muito ansiosa e estressada" },
-        { label: "Tristeza / desânimo", say: "Estou muito triste e desanimada" },
-        { label: "Separação", say: "Estou passando por uma separação" },
-        { label: "Solidão", say: "Me sinto muito sozinha" },
-        { label: "Luto", say: "Estou de luto, perdi uma pessoa querida" },
-        { label: "Autoestima", say: "Estou me sentindo péssima comigo mesma, com a autoestima baixa" },
-        { label: "Conflitos", say: "Estou com um conflito com uma pessoa da minha família" },
-        { label: "Ouvir vozes / percepções", say: "Tenho ouvido vozes e percepções incomuns" },
-        { label: "Só conversar", say: "Quero só conversar um pouco" }
-      ];
-      function renderTopics() {
-        if (chipsEl.childElementCount) { chipsEl.classList.add("on"); return; }
-        TOPICS.forEach(t => {
-          const b = document.createElement("button");
-          b.className = "chip";
-          b.textContent = t.label;
-          b.addEventListener("click", () => send(t.say));
-          chipsEl.appendChild(b);
-        });
-        chipsEl.classList.add("on");
       }
 
       /* ================= Emotion modules (manual, seção 4) ================= */
@@ -1624,12 +1582,12 @@
       }
 
       /* ================= Send flow ================= */
-      function send(textFromChip) {
-        const text = (typeof textFromChip === "string" ? textFromChip : inputEl.value).trim();
+      function send() {
+        const text = inputEl.value.trim();
         if (!text) return;
         if (apiBusy) return; // espera a Lia terminar de responder
         addMsg("user", text);
-        if (typeof textFromChip !== "string") { inputEl.value = ""; inputEl.style.height = "auto"; }
+        inputEl.value = ""; inputEl.style.height = "auto";
         brain(text);
       }
       $("#sendBtn").addEventListener("click", () => send());
@@ -1668,7 +1626,6 @@
         Object.keys(usedIdx).forEach(k => delete usedIdx[k]);
         $$(".mood-btn").forEach(b => b.classList.remove("sel"));
         $("#moodNote").textContent = "";
-        chipsEl.classList.remove("on");
         startFlow();
       }
 
@@ -1677,8 +1634,8 @@
         stage = "chat";
         liaSay([
           "Olá, eu sou a Lia. Que bom que você veio — este é um espaço seu, para conversar sem julgamento e no seu ritmo, como numa conversa acolhedora de verdade.",
-          "Me conta: como você está se sentindo hoje? Pode tocar em um dos temas aqui embaixo ou escrever livremente, do seu jeito — estou ouvindo."
-        ], 500, () => { renderTopics(); });
+          "Me conta: como você está se sentindo hoje? Escreva aqui embaixo, do seu jeito — estou ouvindo."
+        ], 500);
       }
       $("#startBtn").addEventListener("click", () => {
         showView("chat");
@@ -1909,30 +1866,88 @@
       // Luciana, Francisca, Google português…) e fala um pouco mais devagar,
       // com tom levemente mais agudo e macio — como uma conversa acolhedora.
       let liaVoice = null;
+      // Voz feminina suave — seleção rigorosa:
+      // 1) só vozes femininas conhecidas, em português de preferência;
+      // 2) vozes masculinas conhecidas são excluídas explicitamente;
+      // 3) se nenhuma feminina em português existir, usa feminina de outro
+      //    idioma antes de cair para qualquer voz em português.
+      const FEMALE_VOICES = [
+        // ordem de preferência (nomes reais das vozes nos sistemas)
+        "google português do brasil", "google português",
+        "microsoft francisca", "microsoft leticia", "microsoft letícia",
+        "francisca", "leticia", "letícia",
+        "luciana", // iOS/macOS pt-BR feminina
+        "maria", "mari", "camila", "vitoria", "vitória", "fernanda",
+        "ana", "alice", "amelia", "amélia", "bruna", "beatriz",
+        "samantha", "zira", "aria", "jenny", "joana", "ines", "inês",
+        "female", "feminina", "woman"
+      ];
+      const MALE_VOICES = ["daniel", "felipe", "ricardo", "jorge", "joão", "joao",
+        "paulo", "antonio", "antónio", "miguel", "david", "mark", "george",
+        "thiago", "diego", "carlos", "pedro", "male", "masculin", "homem"];
+      function voiceScore(v) {
+        const name = (v.name || "").toLowerCase();
+        const lang = (v.lang || "").replace("_", "-").toLowerCase();
+        if (MALE_VOICES.some(nm => name.includes(nm))) return -100;
+        let s = 0;
+        const fi = FEMALE_VOICES.findIndex(nm => name.includes(nm));
+        if (fi >= 0) s += 120 - fi * 2; // feminina conhecida, na ordem acima
+        if (lang === "pt-br") s += 60;
+        else if (lang.indexOf("pt") === 0) s += 40;
+        else if (fi >= 0) s += 10; // feminina de outro idioma ainda vale
+        if (name.includes("google")) s += 8;
+        if (name.includes("microsoft")) s += 6;
+        if (name.includes("natural") || name.includes("neural")) s += 6;
+        return s;
+      }
       function pickLiaVoice() {
         if (!("speechSynthesis" in window)) return;
         const voices = speechSynthesis.getVoices();
         if (!voices.length) return;
-        const femaleNames = ["maria", "luciana", "francisca", "camila", "vitoria", "vitória",
-          "fernanda", "leticia", "letícia", "google português", "samantha", "zira", "aria"];
-        const isFemale = (v) => femaleNames.some(nm => v.name.toLowerCase().includes(nm));
-        const pt = voices.filter(v => /^pt/i.test(v.lang.replace("_", "-")));
-        liaVoice = pt.find(isFemale) || voices.find(isFemale) || pt[0] || null;
+        const ranked = voices.slice().sort((a, b) => voiceScore(b) - voiceScore(a));
+        const best = ranked[0];
+        // Só aceita a melhor se for feminina conhecida ou estiver em pt;
+        // caso contrário mantém null e o navegador usa o padrão com o
+        // tom/ritmo suaves definidos em speak().
+        liaVoice = (best && voiceScore(best) > 0) ? best : null;
       }
       if ("speechSynthesis" in window) {
         pickLiaVoice();
         speechSynthesis.onvoiceschanged = pickLiaVoice;
+        // Alguns navegadores (Android/Chrome) entregam as vozes um pouco
+        // depois; tenta de novo para não perder a voz feminina em pt-BR.
+        setTimeout(pickLiaVoice, 250);
+        setTimeout(pickLiaVoice, 1000);
+      }
+      // Prepara o texto para uma leitura macia: pausas entre frases e
+      // respiro depois de vírgulas longas, sem alterar o que aparece na tela.
+      function softenText(text) {
+        return String(text || "")
+          .replace(/\s+/g, " ")
+          .replace(/([.!?…])\s+/g, "$1  ")
+          .replace(/(—|--)\s*/g, ", ")
+          .trim();
       }
       function speak(text) {
         if (!("speechSynthesis" in window)) return;
         try {
           if (!liaVoice) pickLiaVoice();
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = "pt-BR";
-          u.rate = 0.95;
-          u.pitch = 1.12;
-          if (liaVoice) u.voice = liaVoice;
-          speechSynthesis.speak(u);
+          const clean = softenText(text);
+          if (!clean) return;
+          // Fala frase a frase: evita o corte de falas longas no Chrome e
+          // deixa a leitura mais calma, com pausa natural entre as frases.
+          const parts = clean.match(/[^.!?…]+[.!?…]*\s*/g) || [clean];
+          parts.forEach((part) => {
+            const t = part.trim();
+            if (!t) return;
+            const u = new SpeechSynthesisUtterance(t);
+            u.lang = "pt-BR";
+            u.rate = 0.88;   // mais devagar = mais suave e acolhedor
+            u.pitch = 1.08;  // levemente mais agudo, sem ficar artificial
+            u.volume = 1;
+            if (liaVoice) { u.voice = liaVoice; u.lang = liaVoice.lang || "pt-BR"; }
+            speechSynthesis.speak(u);
+          });
         } catch (e) { /* sem voz disponível */ }
       }
       // Leitura sob demanda (botão Ouvir de cada bolha): para o que estiver
