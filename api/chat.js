@@ -63,22 +63,28 @@ export default async function handler(req, res) {
   ];
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 40000);
+  const timer = setTimeout(() => controller.abort(), 50000);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   try {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM }] },
-          generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
-          contents,
-        }),
-        signal: controller.signal,
-      }
-    );
+    let r = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM }] },
+            generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+            contents,
+          }),
+          signal: controller.signal,
+        }
+      );
+      if (r.ok || (r.status !== 429 && r.status !== 503)) break;
+      await sleep(3000);
+    }
     clearTimeout(timer);
     if (!r.ok) {
       return res.status(502).json({ ok: false, error: "provider" });
