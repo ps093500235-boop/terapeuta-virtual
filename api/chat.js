@@ -76,7 +76,7 @@ export default async function handler(req, res) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM }] },
-            generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+            generationConfig: { maxOutputTokens: 800, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
             contents,
           }),
           signal: controller.signal,
