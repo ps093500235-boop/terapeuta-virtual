@@ -988,7 +988,7 @@
       let topicLabel = "";
       let lastUserText = "";
       let pendingOffer = null; // 'breath' | 'ground' | null
-      let stage = "welcome";   // welcome | safety | yellow | voices | chat
+      let stage = "welcome";   // welcome | yellow | voices | chat
       let turnCount = 0;
       let topicTurns = 0;
       let summaryDone = false;
@@ -1122,16 +1122,7 @@
       }
 
       function handleAction(action) {
-        if (action === "safe") {
-          stage = "chat";
-          liaSay([
-            "Obrigada por me dizer. Se isso mudar a qualquer momento, toque em “Ajuda agora”, aqui em cima — combino isso com você desde já.",
-            "Sobre o que você gostaria de conversar hoje? Pode tocar em um dos temas ou escrever livremente, do seu jeito."
-          ], undefined, () => { renderTopics(); });
-        }
-        else if (action === "unsure") { yellowFlow(true); }
-        else if (action === "risk") { redFlow(); }
-        else if (action === "yellow-safe") {
+        if (action === "yellow-safe") {
           stage = "chat";
           liaSay([
             "Obrigada pela sinceridade. Fico com você aqui — e deixo uma orientação importante: se o sofrimento estiver intenso ou piorando, procure uma UBS, um CAPS ou um profissional de saúde em prazo breve. O CVV (188) também atende 24 horas, de graça.",
@@ -1625,18 +1616,9 @@
         if (CRISIS_RED.some(k => n.includes(k))) { redFlow(); return; }
         // Resposta à pergunta do módulo de vozes
         if (voicesCheck) { handleVoicesText(n); return; }
-        // Amarelo — sofrimento intenso ou sinais preocupantes
-        if (CRISIS_YELLOW.some(k => n.includes(k))) { yellowFlow(false); return; }
-
-        // Texto livre durante a checagem de segurança: seguir com a conversa
-        if (stage === "safety") {
-          stage = "chat";
-          liaSay(["Obrigada. Vou entender que você não está em perigo imediato agora — se isso mudar a qualquer momento, toque em “Ajuda agora”, aqui em cima."], undefined, () => {
-            renderTopics();
-            processNormal(text, n);
-          });
-          return;
-        }
+        // A conversa segue naturalmente, como com uma pessoa: sem perguntas
+        // de triagem no meio do caminho. O acolhimento de crise (vermelho)
+        // continua disparando pelo que a pessoa escreve, acima.
         if (stage === "yellow") { stage = "chat"; }
         processNormal(text, n);
       }
@@ -1690,19 +1672,13 @@
         startFlow();
       }
 
-      /* ================= Início: boas-vindas → checagem de segurança ================= */
+      /* ================= Início da conversa ================= */
       function startFlow() {
-        stage = "safety";
+        stage = "chat";
         liaSay([
-          "Olá, eu sou a Lia, uma assistente virtual de acolhimento emocional. Posso conversar com você e ajudar a organizar o que está acontecendo. Não substituo psicólogo, médico ou atendimento de emergência — e você pode pular qualquer pergunta ou encerrar quando quiser.",
-          "Antes de começar, uma pergunta breve de segurança: você está em perigo imediato neste momento, ou pensando em se machucar ou machucar alguém?"
-        ], 500, () => {
-          setQR([
-            { label: "Estou segura(o)", action: "safe" },
-            { label: "Não tenho certeza", action: "unsure", cls: "alt" },
-            { label: "Estou em risco", action: "risk", cls: "danger" }
-          ]);
-        });
+          "Olá, eu sou a Lia. Que bom que você veio — este é um espaço seu, para conversar sem julgamento e no seu ritmo, como numa conversa acolhedora de verdade.",
+          "Me conta: como você está se sentindo hoje? Pode tocar em um dos temas aqui embaixo ou escrever livremente, do seu jeito — estou ouvindo."
+        ], 500, () => { renderTopics(); });
       }
       $("#startBtn").addEventListener("click", () => {
         showView("chat");
