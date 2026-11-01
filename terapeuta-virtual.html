@@ -1683,11 +1683,27 @@
         "Que bom que você está falando sobre isso — guardar tudo sozinha(o) pesa o dobro. Continua, por favor: estou aqui, no seu ritmo."
       ];
 
+      /* Uma emoção negada não conta: em “não estou triste”, “não estou
+         ansiosa” ou “não sinto medo”, a palavra aparece, mas o sentimento
+         é o contrário. Olha as palavrinhas logo antes de cada ocorrência
+         e ignora as que estão sob negação. */
+      function occurrenceNegated(n, k) {
+        let idx = n.indexOf(k);
+        while (idx >= 0) {
+          const before = n.slice(Math.max(0, idx - 34), idx);
+          const negated = /(nao|num|nunca|jamais|nem)\s+(estou|to|tou|me sinto|sinto|sou|estava|me sentia|fico|ficava)[^a-z0-9]*$/.test(before) ||
+            /(nao|num|nunca|jamais|nem)\s*$/.test(before) ||
+            /(nao|num)\s+(estou|to|tou)\s+(nem\s+)?(um\s+pouco\s+)?$/.test(before);
+          if (!negated) return false;
+          idx = n.indexOf(k, idx + k.length);
+        }
+        return true;
+      }
       function detectEmotion(n) {
         let best = null, bestScore = 0;
         for (const key in EMOTIONS) {
           let score = 0;
-          EMOTIONS[key].keys.forEach(k => { if (n.includes(k)) score += k.length > 5 ? 2 : 1; });
+          EMOTIONS[key].keys.forEach(k => { if (n.includes(k) && !occurrenceNegated(n, k)) score += k.length > 5 ? 2 : 1; });
           if (score > bestScore) { bestScore = score; best = key; }
         }
         return bestScore > 0 ? best : null;
@@ -1708,7 +1724,27 @@
       ];
       const GOOD_REPLIES = [
         "Que bom ouvir isso! Dias assim merecem ser guardados. O que tem feito bem para você ultimamente?",
-        "Fico feliz por você. Aproveita essa energia boa — e saiba que, se um dia pesar, eu continuo aqui do mesmo jeito. Quer me contar o que tornou hoje um dia bom?"
+        "Fico feliz por você. Aproveita essa energia boa — e saiba que, se um dia pesar, eu continuo aqui do mesmo jeito. Quer me contar o que tornou hoje um dia bom?",
+        "Que notícia boa. Guardar o que está funcionando é um cuidado com você: nos dias cinzentos, essas lembranças viram reserva. O que mais tem te feito bem?",
+        "Adoro saber disso. Me conta um pouquinho desse momento bom — quem ou o que faz parte dele?"
+      ];
+      /* “Não estou bem” NUNCA é motivo de comemoração: quando a pessoa
+         nega uma palavra positiva, a Lia acolhe a dor e pergunta o que
+         está pesando — com falas variadas, para não soar repetida. */
+      const NOTWELL_REPLIES = [
+        "Sinto muito que você não esteja bem. Obrigada por me dizer com sinceridade — aqui você não precisa fingir que está tudo bem. Me conta: o que está pesando mais agora?",
+        "Ouço você, e levo a sério o que você disse: você não está bem. Estou aqui com você, sem pressa. Quer me contar o que aconteceu, ou o que está doendo mais?",
+        "Obrigada por confiar em mim para falar isso. Não estar bem já é difícil — guardar sozinha(o) pesa o dobro. O que você sente que está por trás disso hoje?",
+        "Estou aqui com você. Às vezes “não estou bem” mistura corpo, cabeça e coração ao mesmo tempo. Se a gente olhar por partes: o que está mais difícil neste momento?",
+        "Sinto muito. Você fez bem em falar — reconhecer que não está bem é o primeiro cuidado. Quer desabafar comigo sobre o que está acontecendo?"
+      ];
+      const NOTBAD_REPLIES = [
+        "Entendo — não estar mal já é alguma coisa, ainda mais em dias puxados. E por dentro, como você está de verdade?",
+        "Fico mais tranquila sabendo que não está mal. Se fosse para me contar um pouco mais do seu momento, o que você diria?"
+      ];
+      const MIXED_REPLIES = [
+        "Um dia “mais ou menos” também merece cuidado — nem tudo precisa estar desabando para a gente olhar com carinho. O que está te deixando nesse meio-termo hoje?",
+        "Entendo esse “nem bem, nem mal”. Às vezes é cansaço, às vezes é algo que a gente ainda não nomeou. O que está ocupando sua cabeça?"
       ];
       const SHORT_REPLIES = [
         "Entendo. Me conta um pouco mais sobre isso, do seu jeito — estou ouvindo.",
@@ -1752,8 +1788,39 @@
       const isYes = (n) => /^(sim|quero|pode|pode ser|claro|aham|uhum|ok|isso|vamos|aceito)\b/.test(n);
       const isNo = (n) => /^(nao|agora nao|prefiro nao|depois|melhor nao)\b/.test(n);
       const isGreeting = (n) => /^(oi+|ola|oie|eae|e ai|opa|hey|bom dia|boa tarde|boa noite)\b/.test(n) && n.length < 30;
-      const isFeelingGood = (n) => /(estou|to|tou|me sinto) (muito )?(bem|otima|otimo|feliz|tranquila|tranquilo)\b/.test(n) || n === "bem" || n === "estou bem";
-      const isFeelingBad = (n) => n.includes("nao estou bem") || n.includes("mais ou menos") || /(estou|to|tou|me sinto) (muito )?(mal|ruim|pessima|pessimo)\b/.test(n);
+      /* ============ Tratamento de negação ============
+         Antes, “Não estou bem não” caía na resposta de comemoração só
+         por causa da palavra “bem” — a negação era ignorada. Agora,
+         qualquer palavra de negação perto de uma palavra positiva
+         inverte o sentido: a frase é lida como sentimento negativo.
+         Vale para “não / nao / num / nem / nunca / jamais / nada / sem”
+         antes da palavra positiva (“não estou nada bem”, “nem um pouco
+         feliz”, “nunca me senti bem”, “longe de estar bem”) e para o
+         “não” reforçado no fim (“estou bem não”). Negar uma palavra
+         negativa também inverte: “não estou mal” não é estar mal. */
+      const NEGATORS = ["nao", "num", "nem", "nunca", "jamais", "nada", "nenhum", "nenhuma", "sem"];
+      const POS_WORDS = ["bem", "bom", "boa", "otimo", "otima", "feliz", "melhor", "tranquilo", "tranquila", "animado", "animada", "contente", "alegre", "calmo", "calma", "disposto", "disposta", "grato", "grata"];
+      const NEG_WORDS = ["mal", "ruim", "pessimo", "pessima", "triste", "ansioso", "ansiosa"];
+      const wordsOf = (n) => n.split(/[^a-z0-9]+/).filter(Boolean);
+      function negatedWord(n, list) {
+        if (n.indexOf("longe de estar") >= 0 || n.indexOf("longe de ser") >= 0 || n.indexOf("longe de me sentir") >= 0) return true;
+        const w = wordsOf(n);
+        for (let i = 0; i < w.length; i++) {
+          if (list.indexOf(w[i]) < 0) continue;
+          for (let j = Math.max(0, i - 5); j < i; j++) { if (NEGATORS.indexOf(w[j]) >= 0) return true; }
+          for (let j = i + 1; j < Math.min(w.length, i + 3); j++) { if (w[j] === "nao") return true; }
+        }
+        return false;
+      }
+      const hasNegatedPositive = (n) => negatedWord(n, POS_WORDS);
+      const hasNegatedNegative = (n) => negatedWord(n, NEG_WORDS);
+      const isMixedFeelings = (n) => n.includes("mais ou menos") || /nem (bem|mal) nem (bem|mal)/.test(n) || /nem muito bem|nem muito mal/.test(n);
+      const isFeelingGood = (n) => !hasNegatedPositive(n) && (/(estou|to|tou|me sinto) (muito )?(bem|otima|otimo|feliz|tranquila|tranquilo)\b/.test(n) || n === "bem" || n === "estou bem");
+      const isFeelingBad = (n) => !hasNegatedNegative(n) && (/(estou|to|tou|me sinto) (muito )?(mal|ruim|pessima|pessimo)\b/.test(n));
+      /* Um “não” solto só é resposta curta quando a mensagem é curta:
+         “não estou bem não” é um desabafo, não um “não” para uma oferta. */
+      const isShortNo = (n) => isNo(n) && wordsOf(n).length <= 4;
+      const isShortYes = (n) => isYes(n) && wordsOf(n).length <= 5;
 
       /* Fala as mensagens e, quando a conversa já avançou, fecha com o
          resumo do manual (“Entendi corretamente?”) uma única vez. */
@@ -1876,14 +1943,14 @@
       function localReply(text, n) {
         // Oferta pendente de exercício (respiração guiada)
         if (pendingOffer === "breath") {
-          if (isYes(n)) {
+          if (isShortYes(n)) {
             pendingOffer = null;
             liaSay(["Combinado. Vou abrir o exercício de respiração aqui para você — siga o círculo, no seu ritmo, e pare quando quiser. Quando terminar, me conta como você ficou."]);
             if (window.innerWidth <= 860 && !$("#sidePanel").classList.contains("open")) $("#toolsBtn").click();
             setTimeout(startBreathing, 700);
             return;
           }
-          if (isNo(n)) {
+          if (isShortNo(n)) {
             pendingOffer = null;
             liaSay(["Tudo bem, sem problema nenhum. A gente continua conversando — me conta mais do que está aí dentro de você."]);
             return;
@@ -1892,7 +1959,7 @@
         }
         // Oferta pendente de exercício (aterramento 5-4-3-2-1)
         if (pendingOffer === "ground") {
-          if (isYes(n)) {
+          if (isShortYes(n)) {
             pendingOffer = null;
             liaSay(["Combinado, vamos juntas. Vou abrir o aterramento aqui para você — siga um passo de cada vez, sem pressa. Ele ajuda a mente a voltar para o presente. Quando terminar, me conta como você ficou."]);
             if (window.innerWidth <= 860 && !$("#sidePanel").classList.contains("open")) $("#toolsBtn").click();
@@ -1903,7 +1970,7 @@
             }, 700);
             return;
           }
-          if (isNo(n)) {
+          if (isShortNo(n)) {
             pendingOffer = null;
             liaSay(["Tudo bem, você quem manda no ritmo. Continuo aqui com você — me conta o que mais está pesando agora."]);
             return;
@@ -1941,9 +2008,21 @@
           return;
         }
 
-        // "Estou bem" / "estou mal" ditos de forma direta
-        if (isFeelingGood(n)) { sayWithSummary([rotate("good", GOOD_REPLIES)]); return; }
+        // “Nem bem, nem mal” / “mais ou menos”: meio-termo, sem comemorar
+        // (vem antes da negação: o “nem… nem…” aqui não é dor, é equilíbrio)
+        if (isMixedFeelings(n)) { sayWithSummary([rotate("mixed", MIXED_REPLIES)]); return; }
+        // Sentimento dito de forma direta — a NEGAÇÃO vem primeiro:
+        // “não estou bem / feliz / ótimo…” é dor, nunca comemoração.
+        if (hasNegatedPositive(n)) {
+          const emoNeg = detectEmotion(n);
+          if (emoNeg) { emotionTurn(emoNeg); return; }
+          sayWithSummary([rotate("notwell", NOTWELL_REPLIES)]);
+          return;
+        }
+        // “Não estou mal”: a negação inverte a palavra negativa também
+        if (hasNegatedNegative(n) && !detectEmotion(n)) { sayWithSummary([rotate("notbad", NOTBAD_REPLIES)]); return; }
         if (isFeelingBad(n)) { emotionTurn("tristeza"); return; }
+        if (isFeelingGood(n)) { sayWithSummary([rotate("good", GOOD_REPLIES)]); return; }
 
         // Tema emocional reconhecido no que a pessoa escreveu
         const emo = detectEmotion(n);
@@ -1952,8 +2031,10 @@
         // Cumprimento solto ("oi", "oii", "bom dia"...) — sem repetir "olá"
         if (isGreeting(n)) { liaSay([rotate("greet", GREET_REPLIES)]); return; }
 
-        // Resposta curta ("sim", "não"...) sem contexto novo
-        if (isYes(n) || isNo(n)) { liaSay([rotate("short", SHORT_REPLIES)]); return; }
+        // Resposta curta ("sim", "não"...) sem contexto novo — só quando
+        // a mensagem é curta mesmo, para um desabafo começando com “não”
+        // nunca ser tratado como um simples “não”.
+        if (isShortYes(n) || isShortNo(n)) { liaSay([rotate("short", SHORT_REPLIES)]); return; }
 
         // Continua no tema que já estava em conversa
         if (lastEmotion && EMOTIONS[lastEmotion]) { followUpTurn(); return; }
