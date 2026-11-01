@@ -966,10 +966,7 @@
       const usedIdx = {};
 
       function rotate(key, arr) {
-        if (!usedIdx[key]) usedIdx[key] = 0;
-        const item = arr[usedIdx[key] % arr.length];
-        usedIdx[key]++;
-        return item;
+        return pickFresh(key, arr);
       }
 
       /* ================= Views ================= */
@@ -991,6 +988,15 @@
          Depois disso, qualquer "Olá"/"Oi" no começo de uma resposta
          dela é removido automaticamente. */
       let liaGreeted = false;
+      /* Escolhe uma fala variada sem nunca repetir a mesma duas vezes seguidas. */
+      function pickFresh(key, arr) {
+        if (!arr || !arr.length) return "";
+        if (arr.length === 1) return arr[0];
+        let i;
+        do { i = Math.floor(Math.random() * arr.length); } while (i === usedIdx[key]);
+        usedIdx[key] = i;
+        return arr[i];
+      }
       function stripGreeting(text) {
         let s = String(text);
         const re = /^\s*(olá|ola|oi+|oie|bom dia|boa tarde|boa noite)(?=[\s,!:;.\-—]|$)[\s,!:;—\-.]*/i;
@@ -1202,13 +1208,19 @@
         ansiedade: "Ansiedade / estresse", tristeza: "Tristeza / desânimo",
         estresse: "Estresse / sobrecarga", separacao: "Separação",
         raiva: "Raiva", solidao: "Solidão", luto: "Luto",
-        relacionamento: "Conflitos", autoestima: "Autoestima",
-        sono: "Sono", trabalho: "Trabalho e dinheiro"
+        relacionamento: "Conflitos", autoestima: "Autoestima e autocuidado",
+        sono: "Sono", trabalho: "Trabalho e dinheiro",
+        panico: "Pânico / crise de ansiedade", medo: "Medo",
+        desmotivacao: "Desânimo / falta de motivação", decisoes: "Decisões difíceis",
+        familia: "Problemas em família", filhos: "Filhos", ciume: "Ciúme",
+        termino: "Término recente", saudade: "Saudade", culpa: "Culpa",
+        vergonha: "Vergonha", cansaco: "Cansaço",
+        solidaoAcompanhada: "Solidão mesmo acompanhada", gratidao: "Gratidão"
       };
 
       const EMOTIONS = {
         ansiedade: {
-          keys: ["ansios", "ansiedade", "nervos", "preocupad", "panico", "medo", "aflit", "angustia", "coracao acelerado", "tensao", "inquiet"],
+          keys: ["ansios", "ansiedade", "nervos", "preocupad", "aflit", "angustia", "coracao acelerado", "tensao", "inquiet"],
           val: [
             "Obrigada por me contar. Pelo que você contou, esse aperto está pesando hoje — e você não está exagerando.",
             "Estou te ouvindo. Vamos por partes, sem pressa: quero entender como isso está sendo para você.",
@@ -1315,7 +1327,7 @@
           offer: null
         },
         luto: {
-          keys: ["luto", "morreu", "falec", "perdi meu", "perdi minha", "saudade", "se foi", "velorio"],
+          keys: ["luto", "morreu", "falec", "perdi meu", "perdi minha", "se foi", "velorio", "enterro", "minha mae morreu", "meu pai morreu"],
           val: [
             "Sinto muito pela sua perda. O luto não tem prazo nem jeito certo — cada pessoa vive no seu ritmo, e sentir saudade é também uma forma de amor.",
             "Obrigada por confiar em mim num momento tão delicado. Você não precisa ser forte aqui.",
@@ -1332,7 +1344,7 @@
           offer: null
         },
         relacionamento: {
-          keys: ["marido", "esposa", "esposo", "namorad", "relacionamento", "brig", "termin", "separ", "trai", "ciume", "mae", "pai", "filho", "filha", "familia", "sogra", "amiga", "amigo", "conflito"],
+          keys: ["marido", "esposa", "esposo", "namorad", "relacionamento", "brig", "termin", "separ", "trai", "mae", "pai", "filho", "filha", "familia", "sogra", "amiga", "amigo", "conflito"],
           val: [
             "Relacionamentos mexem fundo com a gente, porque envolvem quem a gente mais ama. Faz sentido isso estar pesando.",
             "Obrigada por me contar. Ouço o seu lado com calma — sem tomar partido a partir de um relato só.",
@@ -1350,7 +1362,7 @@
           offer: null
         },
         autoestima: {
-          keys: ["inutil", "fracass", "incapaz", "vergonha", "culpa", "culpad", "feia", "burra", "nao presto", "nao sou boa", "nao consigo nada", "todo mundo melhor", "autoestima"],
+          keys: ["inutil", "fracass", "incapaz", "feia", "burra", "nao presto", "nao sou boa", "nao sou bom", "nao consigo nada", "todo mundo melhor", "autoestima", "autocuidado", "cuidar de mim", "nao me cuido", "sem tempo para mim", "sem tempo pra mim", "me deixo por ultimo", "nao gosto de mim", "me acho feia", "me acho incapaz", "baixa autoestima"],
           val: [
             "Ei… essa voz dura aí dentro costuma ser muito mais exigente com você do que você seria com alguém querido.",
             "Sinto muito que você esteja se vendo assim hoje. Isso que você sente não define quem você é.",
@@ -1358,11 +1370,13 @@
           ],
           ask: [
             "Que frase dura você costuma dizer a si mesma(o)?",
-            "O que você diria a alguém querido que estivesse na mesma situação que você?"
+            "O que você diria a alguém querido que estivesse na mesma situação que você?",
+            "Quando foi a última vez que você fez algo só por você — sem culpa e sem pedir licença?"
           ],
           tip: [
             "Um exercício simples: quando a autocrítica vier, repita a frase do jeito que você falaria com uma amiga querida. Autocompaixão se treina, aos poucos — sem prometer transformações rápidas.",
-            "Complete a frase “hoje eu consegui…” com algo pequeno: levantar, cuidar de alguém, terminar uma tarefa. Registrar vitórias pequenas muda o olhar com o tempo."
+            "Complete a frase “hoje eu consegui…” com algo pequeno: levantar, cuidar de alguém, terminar uma tarefa. Registrar vitórias pequenas muda o olhar com o tempo.",
+            "Autocuidado não é luxo nem recompensa depois de “merecer”: é manutenção. Comece pequeno e diário — dez minutos de algo que te devolve a você mesma(o): um banho sem pressa, uma música, um café em silêncio. Quem cuida de todo mundo também precisa entrar na própria lista."
           ],
           offer: null
         },
@@ -1401,6 +1415,258 @@
             "Se a cabeça não desliga depois do trabalho, crie um “fechamento do dia”: anote o que ficou pendente e feche o caderno. É um sinal para o cérebro de que o expediente acabou."
           ],
           offer: null
+        },
+        panico: {
+          keys: ["panico", "crise de ansiedade", "crise de panico", "crise de", "ataque de panico", "coracao disparado", "disparado", "palpitacao", "coracao acelerado demais", "falta de ar", "nao consigo respirar", "respiracao curta", "vou desmaiar", "sensacao de morte", "acho que vou morrer", "perdendo o controle", "formigamento", "aperto no peito"],
+          val: [
+            "Estou aqui com você. Uma crise assim assusta muito — o corpo entra em alerta máximo e parece que algo terrível vai acontecer. Na grande maioria das vezes, é o alarme do corpo disparando sem perigo real, e ele passa.",
+            "Obrigada por me contar no meio disso. Você não está exagerando: crise de pânico é uma das sensações mais intensas que existem. Vamos atravessar esse momento juntas, um passo de cada vez.",
+            "Respira comigo, sem pressa. Esse pico costuma durar alguns minutos e depois começa a baixar — seu corpo não consegue manter esse alerta para sempre."
+          ],
+          ask: [
+            "Isso está acontecendo agora, neste momento, ou você está me contando de uma crise que já passou?",
+            "O que você está sentindo no corpo agora: coração disparado, falta de ar, tremor, tontura?",
+            "É a primeira vez que isso acontece, ou já aconteceu outras vezes?"
+          ],
+          tip: [
+            "Vamos fazer um aterramento agora, juntas: olhe ao redor e nomeie 5 coisas que você vê, 4 que você pode tocar, 3 sons que você ouve, 2 cheiros e 1 sabor. Isso ancora a mente no presente. Se quiser, me responda “sim” que eu abro o exercício aqui do lado para te acompanhar passo a passo.",
+            "Na crise, o truque é soltar o ar mais devagar do que você puxa: inspire contando até 4 e expire contando até 6, como quem assopra uma vela sem apagar. Repita algumas vezes, sem forçar. Se quiser, me responda “sim” que eu te acompanho na respiração guiada."
+          ],
+          offer: "ground"
+        },
+        medo: {
+          keys: ["tenho medo", "com medo", "medo de", "estou com medo", "muito medo", "medo de perder", "pavor", "assustad", "receio", "apavorad", "medo que"],
+          val: [
+            "Obrigada por me contar. Medo não é fraqueza — é o seu corpo tentando te proteger de algo. Vamos olhar para ele com calma, juntas.",
+            "Estou ouvindo. Quando o medo aperta, a cabeça costuma imaginar o pior cenário emendado no outro. Aqui a gente pode separar o que é fato do que é imaginação, devagar.",
+            "Sinto que esse medo está ocupando muito espaço aí dentro. Você não precisa enfrentá-lo sozinha(o) neste momento — estou aqui."
+          ],
+          ask: [
+            "Do que exatamente você tem medo? Me conta com as suas palavras, sem pressa.",
+            "Esse medo é de algo que está acontecendo agora, ou de algo que pode acontecer?",
+            "Quando esse medo aparece, o que você costuma fazer — e isso ajuda ou piora?"
+          ],
+          tip: [
+            "Um passo pequeno ajuda muito: pergunte a si mesma(o) “qual é o pior cenário realista — e o que eu faria se ele acontecesse?”. Quase sempre descobrimos que teríamos algum recurso. Medo nomeado perde força.",
+            "Se o corpo estiver em alerta, soltar o ar devagar algumas vezes avisa ao cérebro que não há perigo imediato. Se quiser, me responda “sim” que eu te acompanho numa respiração guiada, no seu ritmo."
+          ],
+          offer: "breath"
+        },
+        desmotivacao: {
+          keys: ["sem motivacao", "falta de motivacao", "desmotiv", "sem animo", "desanimad", "sem disposicao", "nao tenho vontade de nada", "sem vontade de fazer", "procrastin", "preguica de viver", "nada me anima", "sem energia para nada"],
+          val: [
+            "Obrigada por falar disso. Falta de motivação não é preguiça nem defeito de caráter — muitas vezes é sinal de esgotamento ou de tristeza acumulada. Você não está sozinha(o) nisso.",
+            "Estou te ouvindo. Quando a vontade some, até o que era simples parece uma montanha. Faz sentido você estar cansada(o) de se cobrar.",
+            "Sinto que você vem se arrastando pelos dias. Quero entender melhor o que está por trás disso, sem julgamento."
+          ],
+          ask: [
+            "Há quanto tempo você se sente assim? Foi aos poucos ou depois de alguma coisa específica?",
+            "Tem alguma área da vida em que a vontade ainda aparece, mesmo que pouquinha?",
+            "Como estão seu sono, sua alimentação e seu descanso ultimamente?"
+          ],
+          tip: [
+            "Com a motivação baixa, a gente não espera a vontade para agir — age em doses mínimas para a vontade voltar: não é “arrumar a casa”, é “lavar um copo”. Escolha hoje um passo de cinco minutos, só um. Pequeno também conta, e conta muito.",
+            "Luz natural pela manhã, um banho e mexer o corpo por dez minutos parecem pouco, mas são combustíveis reais de energia. Se esse desânimo durar semanas ou vier com tristeza profunda, procure uma UBS ou um CAPS — isso merece cuidado profissional."
+          ],
+          offer: null
+        },
+        decisoes: {
+          keys: ["nao sei o que fazer", "nao sei o que faco", "nao sei o que", "nao sei que decisao", "decisao dificil", "preciso decidir", "nao consigo decidir", "indecis", "em duvida", "nao sei se devo", "nao sei se vou", "nao sei se fico", "nao sei se saio", "dilema", "encruzilhada", "que caminho"],
+          val: [
+            "Decisão difícil costuma pesar porque os dois lados importam para você. Obrigada por confiar em mim para pensar isso em voz alta.",
+            "Estou aqui. Não vou decidir por você — mas posso te ajudar a enxergar a situação com mais clareza, um pedaço de cada vez.",
+            "Ficar travada(o) entre opções é exaustivo. Vamos organizar os pensamentos juntas, sem pressa de concluir nada hoje."
+          ],
+          ask: [
+            "Qual é a decisão que está na sua frente? Me conta as opções como elas são, sem se julgar.",
+            "Se você pudesse ouvir o que seu coração quer, sem medo do julgamento de ninguém, o que ele diria?",
+            "O que você teme que aconteça se escolher um lado — e o que teme se não escolher nada?"
+          ],
+          tip: [
+            "Um exercício que ajuda: escreva as duas opções e, para cada uma, o que você ganha, o que você perde e o que é reversível. Muita decisão assusta menos no papel do que girando na cabeça. Se quiser, a gente monta isso no seu Mapa Mental.",
+            "Outro truque honesto: pergunte-se “como eu me sentiria com essa escolha daqui a um mês? E daqui a um ano?”. O tempo costuma mostrar o que o medo de hoje esconde."
+          ],
+          offer: null
+        },
+        familia: {
+          keys: ["minha familia", "meus pais", "minha mae nao", "meu pai nao", "problema em casa", "brigas em casa", "familia toxica", "minha sogra", "meu sogro", "meus irmaos", "briguei com minha mae", "briguei com meu pai", "briguei com minha irma", "briguei com meu irmao", "com minha mae", "com meu pai", "com minha irma", "com meu irmao", "conflito em casa", "la em casa"],
+          val: [
+            "Problema em família dói de um jeito particular, porque envolve quem deveria ser nosso porto seguro. Faz sentido isso estar te machucando.",
+            "Obrigada por me contar. Laços de família misturam amor, história e mágoa — e tudo isso pode coexistir. Estou ouvindo o seu lado, sem julgamento.",
+            "Você não é obrigada(o) a aguentar tudo só porque “é família”. Seu sentimento importa aqui."
+          ],
+          ask: [
+            "O que tem acontecido em casa que mais te pesa?",
+            "Você já conseguiu conversar sobre isso com essa pessoa, ou a conversa sempre vira briga?",
+            "O que você gostaria que mudasse nessa relação, se pudesse pedir uma coisa só?"
+          ],
+          tip: [
+            "Conversas difíceis rendem mais fora do calor do momento: escolha uma hora calma, fale de como você se sente (“eu fico… quando…”) em vez de acusar (“você sempre…”), e peça uma mudança concreta e pequena. Se a relação tiver violência ou ameaça, a prioridade é a sua segurança — ligue 180 em caso de violência contra a mulher.",
+            "Colocar limites não é falta de amor: é o que mantém a relação possível. Você pode amar sua família e, ao mesmo tempo, proteger seu tempo, seu dinheiro e sua paz."
+          ],
+          offer: null
+        },
+        filhos: {
+          keys: ["meu filho", "minha filha", "meus filhos", "minhas filhas", "meu bebe", "filho adolescente", "filha adolescente", "criacao", "maternidade", "meu menino", "minha menina", "filho doente", "filho nao obedece"],
+          val: [
+            "Ser mãe ou pai é carregar o coração fora do corpo. Dá para sentir daqui o quanto você se preocupa — e o quanto isso também cansa.",
+            "Obrigada por me contar. Criar filho é uma das tarefas mais exigentes que existem, e quase ninguém vê o tamanho do seu esforço. Você não está falhando por estar cansada(o).",
+            "Estou ouvindo você. Amor de mãe e de pai vem misturado com medo, culpa e exaustão — tudo junto, e está tudo bem sentir tudo isso."
+          ],
+          ask: [
+            "Quantos anos tem seu filho ou sua filha? E o que está acontecendo com ele(a) agora?",
+            "O que mais te preocupa nessa fase: o comportamento, a saúde, os estudos ou o futuro?",
+            "Você tem com quem dividir esse peso, ou está segurando quase tudo sozinha(o)?"
+          ],
+          tip: [
+            "Um lembrete que psicólogos repetem muito: criança não precisa de mãe ou pai perfeitos — precisa de presença “boa o suficiente” e de reparo quando erramos. Pedir desculpa a um filho ensina mais do que acertar sempre.",
+            "Reserve, mesmo que sejam quinze minutos, um tempo de conexão sem tela e sem bronca: brincar, conversar, ouvir. É esse fio que segura a relação nas fases difíceis — e ele se constrói em doses pequenas."
+          ],
+          offer: null
+        },
+        ciume: {
+          keys: ["ciume", "ciument", "muito ciume", "sinto ciume", "inseguranca no relacionamento", "medo de perder ele", "medo de perder ela", "desconfianc", "ele conversa com outra", "ela conversa com outro", "mexe no celular dele", "mexe no celular dela"],
+          val: [
+            "Ciúme dói de um jeito físico, e quase sempre, por baixo dele, mora um medo: o de perder alguém ou de não ser suficiente. Obrigada por falar disso sem vergonha — aqui não há julgamento.",
+            "Estou ouvindo você. Sentir ciúme não te faz uma pessoa ruim; o que importa é o que fazemos com esse sentimento. Vamos olhar para ele com calma.",
+            "Dá para perceber como isso está consumindo você. Insegurança dentro de um relacionamento cansa os dois lados — e merece ser cuidada, não escondida."
+          ],
+          ask: [
+            "Aconteceu algo concreto que despertou esse ciúme, ou ele aparece mesmo sem um fato específico?",
+            "No fundo, qual é o seu maior medo nessa relação?",
+            "Você já conversou sobre isso com ele(a)? Como foi essa conversa?"
+          ],
+          tip: [
+            "Na hora em que o ciúme dispara, segure o impulso de investigar ou confrontar: respire, espere a onda baixar (ela sempre baixa, em geral em até uns 20 minutos) e só depois converse — falando do seu sentimento, não montando um interrogatório.",
+            "Ciúme se alimenta de comparação e de vigilância. Um caminho mais firme é fortalecer a conversa e os combinados do casal — e, em paralelo, a sua própria autoestima, para que seu valor não dependa de fiscalização."
+          ],
+          offer: null
+        },
+        termino: {
+          keys: ["acabou comigo", "acabou tudo entre", "acabou tudo", "terminou comigo", "rompimento", "terminamos ontem", "terminou ontem", "terminou comigo ontem", "acabou de terminar", "termino recente", "relacionamento acabou", "meu relacionamento acabou", "terminou comigo hoje", "acabamos de terminar"],
+          val: [
+            "Sinto muito. Um término recente é um luto em miniatura: a pessoa continua existindo, mas o futuro que você imaginou, não. É normal doer muito nos primeiros dias.",
+            "Obrigada por me contar algo tão fresco e delicado. Nas primeiras semanas, a dor vem em ondas — algumas horas boas, outras insuportáveis. Isso é o processo, não é você “não superando direito”.",
+            "Estou aqui com você. Não vou te apressar com frases prontas de superação. Primeiro, a gente cuida de atravessar os dias."
+          ],
+          ask: [
+            "Como foi esse término — foi decisão sua, dele(a), ou aconteceu de um jeito que você não esperava?",
+            "O que está mais difícil agora: a saudade, a rotina que mudou, ou os pensamentos que não param?",
+            "Você tem alguém por perto nesses dias, ou está atravessando isso mais sozinha(o)?"
+          ],
+          tip: [
+            "Nos primeiros dias, três cuidados práticos ajudam: bloquear ou silenciar o que dispara a dor (fotos, redes, conversas antigas), manter o básico (comer, dormir, tomar banho) e não tomar decisões grandes no impulso — nem a de voltar, nem a de “provar” algo. O tempo precisa trabalhar.",
+            "Escrever o que você diria para ele(a) — sem enviar — esvazia a cabeça e evita a mensagem da madrugada que a gente se arrepende depois. Se quiser, a gente organiza o que você sente no seu Mapa Mental."
+          ],
+          offer: null
+        },
+        saudade: {
+          keys: ["saudade", "sinto falta", "sinto muita falta", "que falta", "morro de saudade", "bateu a saudade", "saudades dele", "saudades dela", "saudades de voce", "saudades da minha", "saudades do meu"],
+          val: [
+            "Saudade é a prova de que algo — ou alguém — importa muito para você. Ela dói, mas também fala de amor. Obrigada por compartilhar isso comigo.",
+            "Estou ouvindo. Tem dias em que a saudade aperta sem avisar: uma música, um lugar, um horário do dia. Faz sentido ela ter aparecido para você agora.",
+            "Sinto muito que esteja doendo. Saudade não se “resolve” — a gente aprende a carregá-la de um jeito mais leve, aos poucos."
+          ],
+          ask: [
+            "De quem — ou de quê — é essa saudade?",
+            "O que você mais sente falta: da presença, das conversas, ou de como você se sentia naquela época?",
+            "Tem algo que ajuda quando ela aperta: uma foto, uma música, uma lembrança específica?"
+          ],
+          tip: [
+            "Um gesto que acolhe: reserve um momento do dia para lembrar com calma — olhar uma foto, ouvir a música de vocês, escrever o que diria para essa pessoa. Saudade com hora marcada costuma invadir menos o resto do dia.",
+            "Se a saudade é de alguém que está vivo e longe, uma mensagem simples — “lembrei de você hoje” — às vezes encurta uma distância que só existia na nossa cabeça."
+          ],
+          offer: null
+        },
+        culpa: {
+          keys: ["culpa", "culpad", "me sinto culpada", "me sinto culpado", "foi minha culpa", "minha culpa", "me culpo", "erro foi meu", "eu errei", "arrepend"],
+          val: [
+            "A culpa pesa porque você se importa — quem não se importa não sente isso. Mas carregar tudo sozinha(o), para sempre, não repara nada. Vamos olhar para isso com honestidade e com carinho, os dois juntos.",
+            "Obrigada por me confiar algo tão íntimo. Sentir culpa por um erro não faz de você uma pessoa má — faz de você uma pessoa com consciência.",
+            "Estou ouvindo você. Existe uma diferença importante: uma coisa é reconhecer um erro; outra é se condenar por ele sem prazo para acabar."
+          ],
+          ask: [
+            "Do que exatamente você se sente culpada(o)? Me conta o que aconteceu, do seu ponto de vista.",
+            "Se uma pessoa que você ama tivesse feito exatamente a mesma coisa, o que você diria para ela?",
+            "Existe algo concreto que ainda dá para reparar — um pedido de desculpas, um conserto, uma conversa?"
+          ],
+          tip: [
+            "Um exercício justo: separe os fatos das interpretações. Escreva o que de fato aconteceu, o que era realmente sua responsabilidade e o que estava fora do seu controle. A culpa costuma misturar tudo — e cobrar por partes que não são suas.",
+            "Quando há reparo possível, ele liberta mais do que mil ruminações: um “errei, me desculpa” sincero, sem desculpas embutidas, muda histórias. E o que não tem reparo, a gente transforma em aprendizado — não em prisão."
+          ],
+          offer: null
+        },
+        vergonha: {
+          keys: ["vergonha", "envergonhad", "me sinto ridicula", "me sinto ridiculo", "humilhad", "passando vergonha", "morro de vergonha", "que mico", "todos vao rir", "vao me julgar"],
+          val: [
+            "A vergonha faz a gente querer sumir — e, mesmo assim, você está aqui falando dela. Isso já é o começo de enfrentá-la. Estou com você, sem nenhum julgamento.",
+            "Obrigada por me contar. Vergonha costuma vir com uma voz que diz “o problema sou eu”. Não é verdade: um momento embaraçoso não define quem você é.",
+            "Todo mundo carrega uma história que preferia esquecer. Você não é a única pessoa a sentir isso — nem de longe."
+          ],
+          ask: [
+            "O que aconteceu que te deixou com esse sentimento?",
+            "Você tem medo da reação de alguém específico, ou é uma cobrança que vem de dentro?",
+            "O que você diria a uma amiga querida que estivesse se sentindo exatamente assim?"
+          ],
+          tip: [
+            "A vergonha cresce no segredo e encolhe na luz: conversar sobre ela com alguém seguro — como você está fazendo aqui — tira boa parte da força dela. Você já deu o passo mais difícil.",
+            "Quando ela aparecer, troque a frase “eu sou…” por “eu fiz…” ou “eu senti…”. Um comportamento se ajusta; uma identidade acusada se defende. Essa troca pequena muda a conversa interna."
+          ],
+          offer: null
+        },
+        cansaco: {
+          keys: ["cansad", "cansaco", "sem energia", "esgotament", "so queria dormir", "exausta demais", "exausto demais", "corpo pesado", "mente cansada", "acordo cansada", "acordo cansado", "dormindo e cansada"],
+          val: [
+            "Dá para sentir o peso daí. Cansaço que não passa nem descansando é o corpo pedindo socorro — e ele merece ser ouvido, não empurrado.",
+            "Obrigada por me contar. Você não está “fraca” nem “preguiçosa”: está exausta(o), que é coisa bem diferente. Vamos olhar para isso.",
+            "Estou aqui. Quando tudo cansa — corpo, cabeça e coração ao mesmo tempo — qualquer conselho simples parece pouco. Vamos por partes."
+          ],
+          ask: [
+            "Esse cansaço é mais do corpo, da cabeça ou das emoções?",
+            "Você tem conseguido dormir? E quando dorme, acorda descansada(o)?",
+            "Quando foi a última vez que você descansou de verdade, sem culpa?"
+          ],
+          tip: [
+            "Descanso não é só dormir: existe descanso físico, mental (longe de telas e notícias), social e até criativo. Às vezes o que falta não são horas de sono — é uma dessas outras pausas. Qual delas está mais em falta na sua vida?",
+            "Se o cansaço persistir por semanas, vale investigar no corpo também: anemia, tireoide e falta de vitaminas causam exaustão de verdade. Uma consulta na UBS é um passo de cuidado, não de exagero."
+          ],
+          offer: null
+        },
+        solidaoAcompanhada: {
+          keys: ["sozinha mesmo", "sozinho mesmo", "sozinha mesmo com", "sozinho mesmo com", "me sinto so com", "me sinto sozinha com", "me sinto sozinho com", "solidao mesmo", "ninguem me ouve", "me sinto so no meio", "so entre pessoas", "sozinha no casamento", "sozinho no casamento", "me sinto invisivel", "mesmo acompanhada me sinto", "mesmo acompanhado me sinto"],
+          val: [
+            "Essa é uma das solidões mais doloridas: estar acompanhada(o) e, ainda assim, se sentir sozinha(o). Não é contradição — é sinal de que falta conexão de verdade, não gente por perto.",
+            "Obrigada por nomear isso, porque é difícil de explicar para os outros: “mas você tem companhia!”. Ter alguém ao lado e não se sentir vista(o) dói de um jeito silencioso. Eu estou te ouvindo.",
+            "Estou aqui com você. Sentir-se invisível dentro da própria casa ou da própria relação desgasta devagar, dia após dia. Faz todo sentido isso pesar."
+          ],
+          ask: [
+            "Ao lado de quem você mais sente essa solidão?",
+            "O que você sente falta de receber: escuta, carinho, conversa, presença de verdade?",
+            "Você já tentou dizer isso para essa pessoa? O que aconteceu?"
+          ],
+          tip: [
+            "Um passo possível: escolher um momento calmo e dizer, sem acusar, “eu tenho me sentido sozinha(o) mesmo com você aqui — eu precisava de mais conversa/presença”. Frases sobre o nosso sentimento abrem portas que críticas fecham.",
+            "E não concentre tudo numa pessoa só: amizades, grupos, comunidade, família — cada vínculo alimenta uma parte. Reconstruir a rede aos poucos devolve o chão."
+          ],
+          offer: null
+        },
+        gratidao: {
+          keys: ["gratidao", "sou grata", "sou grato", "me sinto grata", "me sinto grato", "agradecid", "quero agradecer", "obrigada por tudo", "dia abencoado", "estou abencoad", "graças a deus", "gracas a deus", "me sinto abencoad"],
+          val: [
+            "Que bonito ler isso. Gratidão não apaga os dias difíceis — mas muda o lugar de onde a gente olha para a vida. Fico feliz que hoje seu coração esteja assim.",
+            "Adoro quando a conversa chega aqui. Reconhecer o que é bom, no meio da vida real, é uma força — e ela aparece na sua fala.",
+            "Obrigada por compartilhar uma coisa boa. Guardar dias assim é importante: eles viram reserva para os dias cinzentos."
+          ],
+          ask: [
+            "Pelo que, especificamente, você é grata(o) hoje?",
+            "Tem alguém que faz parte dessa gratidão e que merecia ouvir isso de você?",
+            "O que esse momento bom te ensina sobre o que você quer cultivar mais na sua vida?"
+          ],
+          tip: [
+            "Se quiser guardar esse momento, o Diário de Gratidão aqui das ferramentas foi feito para isso: anote até três coisas boas de hoje. Nos dias pesados, reler essas anotações lembra que a vida também tem esse lado.",
+            "Gratidão expressa muda relações: uma mensagem simples para quem te fez bem — “obrigada(o) por…” — costuma iluminar o dia dos dois lados."
+          ],
+          offer: null
         }
       };
 
@@ -1409,7 +1675,12 @@
         "Obrigada por compartilhar comigo. O que mais te mexe nisso tudo?",
         "Entendo. Às vezes só colocar em palavras já alivia um pouco. Quer me contar como isso começou?",
         "Estou aqui com você. Se fosse para dar um nome ao que você está sentindo agora, qual seria?",
-        "Faz sentido para você a gente organizar isso aos poucos? Me fala mais — estou ouvindo, sem pressa."
+        "Faz sentido para você a gente organizar isso aos poucos? Me fala mais — estou ouvindo, sem pressa.",
+        "Ouço você. Antes de qualquer coisa, quero que saiba: o que você sente faz sentido dentro da sua história. Me ajuda a enxergar melhor — como isso tem sido no seu dia a dia?",
+        "Isso que você trouxe merece espaço, não pressa. Se a gente fosse olhar para um pedacinho de cada vez, por onde você começaria?",
+        "Percebo que tem algo aí pedindo cuidado. Você quer me contar mais sobre isso, ou prefere que eu te ajude a organizar as ideias primeiro?",
+        "Estou prestando atenção em cada palavra. Às vezes, por trás do que a gente conta, tem um sentimento maior querendo aparecer. Qual você acha que é, no seu caso?",
+        "Que bom que você está falando sobre isso — guardar tudo sozinha(o) pesa o dobro. Continua, por favor: estou aqui, no seu ritmo."
       ];
 
       function detectEmotion(n) {
@@ -1448,8 +1719,35 @@
         "Entendo… continua, estou te ouvindo com atenção.",
         "Faz sentido você se sentir assim. Obrigada por confiar em mim.",
         "Estou aqui com você, sem pressa nenhuma.",
-        "O que você está me contando importa. Vamos por partes, juntas."
+        "O que você está me contando importa. Vamos por partes, juntas.",
+        "Ouço você — e percebo que isso mexe fundo. Não precisa resumir nem se explicar: fala do seu jeito.",
+        "Isso que você disse é importante. Fica comigo nesse ponto um instante, sem pressa de resolver.",
+        "Percebo o peso no que você conta. Você está indo bem só de conseguir colocar isso em palavras."
       ];
+      const ADVICE_GENERIC = [
+        "Vou te falar como eu enxergo, com carinho e honestidade: quase todo problema fica menor quando a gente o divide em três partes — o que depende de mim, o que depende dos outros e o que não depende de ninguém. Cuide hoje só da primeira parte, com um passo pequeno. O resto, a gente observa. Quer me contar a situação para a gente fazer essa divisão juntas?",
+        "Um conselho que vale para quase tudo: não decida nada grande no auge da emoção. Durma, coma, descanse — e decida com a cabeça fria, de preferência depois de conversar com alguém de confiança. A urgência costuma ser da dor, não do problema. O que está te pedindo uma decisão agora?",
+        "Se eu pudesse te deixar um pensamento hoje, seria este: você não precisa resolver a vida inteira de uma vez. Escolha a menor parte do problema — a que cabe nesta semana — e cuide só dela. Pequeno e feito vale mais que perfeito e adiado. Qual seria essa menor parte, no seu caso?",
+        "Meu conselho, com todo o cuidado: trate-se como trataria alguém que você ama muito. A maioria de nós aconselha os outros com uma sabedoria que não usa consigo. O que você diria a uma amiga querida na sua situação exata?"
+      ];
+      const ADVICE_FOLLOW = [
+        "Faz sentido para você? E, pensando nisso, qual seria o menor passo possível ainda hoje?",
+        "Como esse conselho bate aí dentro? Tem alguma parte dele que parece possível — e outra que parece impossível?",
+        "Quer que a gente transforme isso num próximo passo concreto, bem pequeno, no seu Mapa Mental?"
+      ];
+
+      function adviceTurn() {
+        if (lastEmotion && EMOTIONS[lastEmotion]) {
+          const e = EMOTIONS[lastEmotion];
+          sayWithSummary([
+            "Vou te falar o que eu penso sobre isso, com base em tudo que você me contou — não como verdade absoluta, mas como um olhar de fora, com carinho:",
+            rotate("tip_" + lastEmotion, e.tip),
+            rotate("advicefollow", ADVICE_FOLLOW)
+          ]);
+        } else {
+          sayWithSummary([rotate("advice", ADVICE_GENERIC)]);
+        }
+      }
 
       const isYes = (n) => /^(sim|quero|pode|pode ser|claro|aham|uhum|ok|isso|vamos|aceito)\b/.test(n);
       const isNo = (n) => /^(nao|agora nao|prefiro nao|depois|melhor nao)\b/.test(n);
@@ -1592,6 +1890,26 @@
           }
           pendingOffer = null;
         }
+        // Oferta pendente de exercício (aterramento 5-4-3-2-1)
+        if (pendingOffer === "ground") {
+          if (isYes(n)) {
+            pendingOffer = null;
+            liaSay(["Combinado, vamos juntas. Vou abrir o aterramento aqui para você — siga um passo de cada vez, sem pressa. Ele ajuda a mente a voltar para o presente. Quando terminar, me conta como você ficou."]);
+            if (window.innerWidth <= 860 && !$("#sidePanel").classList.contains("open")) $("#toolsBtn").click();
+            setTimeout(() => {
+              if (groundIdx < 0) gBtn.click();
+              const sp = $("#sidePanel");
+              if (sp) sp.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 700);
+            return;
+          }
+          if (isNo(n)) {
+            pendingOffer = null;
+            liaSay(["Tudo bem, você quem manda no ritmo. Continuo aqui com você — me conta o que mais está pesando agora."]);
+            return;
+          }
+          pendingOffer = null;
+        }
 
         // Despedida
         if (n === "tchau" || n.includes("ate logo") || n.includes("ate mais") || n.includes("vou indo")) { closeFlow(); return; }
@@ -1604,6 +1922,12 @@
             n.includes("voce e de verdade") || n.includes("voce e real") || n.includes("voce e uma pessoa") ||
             n.includes("voce e humana") || n.includes("voce e psicologa")) {
           liaSay(["Eu sou a Lia, uma assistente virtual de acolhimento: um programa com respostas preparadas com muito cuidado por pessoas, feito para te escutar e te acompanhar. Não sou uma pessoa de verdade, nem psicóloga — mas estou aqui para você, sem julgamento nenhum. Me conta: como você está se sentindo?"]);
+          return;
+        }
+
+        // Pedido de conselho
+        if (n.includes("conselho") || n.includes("me aconselha") || n.includes("o que voce faria") || n.includes("o que eu devo fazer")) {
+          adviceTurn();
           return;
         }
 
