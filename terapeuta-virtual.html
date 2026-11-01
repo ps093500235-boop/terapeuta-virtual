@@ -297,27 +297,52 @@
 
       .typing {
         display: none;
-        align-items: center; gap: 5px;
+        align-items: center; gap: 9px;
         padding: 12px 16px;
         background: var(--lia-bubble);
         border: 1px solid var(--line);
         border-radius: var(--radius);
         border-bottom-left-radius: 6px;
         width: fit-content;
+        max-width: 88%;
         margin-top: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink-soft);
       }
       .typing.on { display: inline-flex; }
-      .typing span {
+      .typing-label { animation: typingPulse 2s ease-in-out infinite; }
+      .tdots { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+      .tdots i {
         width: 7px; height: 7px; border-radius: 50%;
         background: var(--ink-soft);
         animation: bounce 1.2s infinite;
       }
-      .typing span:nth-child(2) { animation-delay: 0.15s; }
-      .typing span:nth-child(3) { animation-delay: 0.3s; }
+      .tdots i:nth-child(2) { animation-delay: 0.15s; }
+      .tdots i:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes typingPulse {
+        0%, 100% { opacity: 0.72; }
+        50% { opacity: 1; }
+      }
       @keyframes bounce {
         0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
         30% { transform: translateY(-4px); opacity: 1; }
       }
+
+      /* Aviso técnico do aplicativo (não é uma fala da Lia) */
+      .sys-notice {
+        margin-top: 12px;
+        align-self: center;
+        max-width: min(88%, 480px);
+        background: var(--yellow-bg);
+        border: 1.5px dashed var(--yellow-line);
+        color: var(--yellow-ink);
+        border-radius: 14px;
+        padding: 12px 15px;
+        font-size: 14.5px;
+        text-align: center;
+      }
+      .sys-notice strong { display: block; font-size: 15.5px; margin-bottom: 3px; }
 
       .crisis-card {
         margin-top: 12px;
@@ -636,7 +661,7 @@
         .page-head h1 { font-size: 20px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .typing span { animation: none; }
+        .tdots i, .typing-label { animation: none; }
         .messages { scroll-behavior: auto; }
       }
     </style>
@@ -1025,16 +1050,37 @@
         requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
       }
       let typingEl = null;
+      let typingWaitTimer = null;
       function showTyping() {
         hideTyping();
         typingEl = document.createElement("div");
         typingEl.className = "typing on";
-        typingEl.setAttribute("aria-label", "Lia está digitando");
-        typingEl.innerHTML = "<span></span><span></span><span></span>";
+        typingEl.setAttribute("role", "status");
+        typingEl.setAttribute("aria-label", "Lia está escrevendo");
+        const label = document.createElement("span");
+        label.className = "typing-label";
+        label.textContent = "Lia está escrevendo…";
+        const dots = document.createElement("span");
+        dots.className = "tdots";
+        dots.setAttribute("aria-hidden", "true");
+        dots.innerHTML = "<i></i><i></i><i></i>";
+        typingEl.appendChild(label);
+        typingEl.appendChild(dots);
         messagesEl.appendChild(typingEl);
+        /* Se a resposta estiver demorando, o indicador tranquiliza a pessoa:
+           está funcionando, não travou. */
+        typingWaitTimer = setTimeout(() => {
+          if (typingEl && label.isConnected) {
+            label.textContent = "Lia ainda está escrevendo — às vezes a resposta demora um pouquinho, mas está tudo funcionando…";
+            scrollDown();
+          }
+        }, 20000);
         scrollDown();
       }
-      function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+      function hideTyping() {
+        if (typingWaitTimer) { clearTimeout(typingWaitTimer); typingWaitTimer = null; }
+        if (typingEl) { typingEl.remove(); typingEl = null; }
+      }
 
       function liaSay(texts, delay, onDone) {
         const list = Array.isArray(texts) ? texts : [texts];
@@ -1511,33 +1557,67 @@
           hist = hist.slice(0, -1);
         }
         hist = hist.slice(-12);
-        const ctrl = ("AbortController" in window) ? new AbortController() : null;
-        const timer = ctrl ? setTimeout(() => ctrl.abort(), 30000) : null;
-        try {
-          const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text, history: hist }),
-            signal: ctrl ? ctrl.signal : undefined
-          });
-          if (timer) clearTimeout(timer);
-          if (!res.ok) throw new Error("http " + res.status);
-          const data = await res.json().catch(() => null);
-          const reply = data && (data.reply || data.response || data.text);
-          if (!reply || typeof reply !== "string") throw new Error("resposta vazia");
-          hideTyping();
+        const reply = await fetchReply(text, hist);
+        hideTyping();
+        if (reply) {
           apiTurns++;
           addMsg("lia", reply.trim());
           maybeSummary();
-        } catch (err) {
-          if (timer) clearTimeout(timer);
-          hideTyping();
-          addMsg("lia", "Desculpa, tive um probleminha de conexão agora e não consegui responder. Sua mensagem ficou guardada aqui comigo — toca em “Tentar de novo” daqui a pouquinho, por favor.");
+        } else {
+          addConnNotice();
           setQR([{ label: "Tentar de novo", action: "retry-api", noEcho: true }]);
-        } finally {
-          apiBusy = false;
-          $("#sendBtn").disabled = false;
         }
+        apiBusy = false;
+        $("#sendBtn").disabled = false;
+      }
+
+      /* Busca a resposta da Lia no servidor, com paciência: cada tentativa
+         espera até 75s (a IA às vezes demora para responder), e se a
+         conexão falhar ou demorar demais, o app tenta de novo sozinho, em
+         silêncio — até 4 tentativas no total, com pausas crescentes entre
+         elas (2s, 4s, 8s). Durante tudo isso o indicador "Lia está
+         escrevendo…" continua visível na conversa, e o aviso de falha só
+         aparece depois que todas as tentativas se esgotam. */
+      async function fetchReply(text, hist) {
+        const backoff = [2000, 4000, 8000];
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const ctrl = ("AbortController" in window) ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 75000) : null;
+          try {
+            const res = await fetch("/api/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: text, history: hist }),
+              signal: ctrl ? ctrl.signal : undefined
+            });
+            if (timer) clearTimeout(timer);
+            if (!res.ok) throw new Error("http " + res.status);
+            const data = await res.json().catch(() => null);
+            const reply = data && (data.reply || data.response || data.text);
+            if (reply && typeof reply === "string") return reply;
+            throw new Error("resposta vazia");
+          } catch (err) {
+            if (timer) clearTimeout(timer);
+            if (attempt < 3) await new Promise(r => setTimeout(r, backoff[attempt]));
+          }
+        }
+        return null;
+      }
+
+      /* Aviso técnico do aplicativo — aparece como um cartão do sistema,
+         não como uma fala da Lia, e não entra no histórico da conversa. */
+      function addConnNotice() {
+        const note = document.createElement("div");
+        note.className = "sys-notice";
+        note.setAttribute("role", "alert");
+        const head = document.createElement("strong");
+        head.textContent = "Falha de conexão";
+        const body = document.createElement("span");
+        body.textContent = "A internet oscilou e a resposta não conseguiu chegar — é um problema técnico da conexão, não da conversa. Sua mensagem ficou guardada aqui: toque em “Tentar de novo” para buscar a resposta.";
+        note.appendChild(head);
+        note.appendChild(body);
+        messagesEl.appendChild(note);
+        scrollDown();
       }
 
       function brain(rawText) {
